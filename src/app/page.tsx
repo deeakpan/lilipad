@@ -153,19 +153,24 @@ export default function HomePage() {
             className={`py-6 transition-all duration-300 ${sidebarOpen ? 'opacity-50 pointer-events-none' : 'opacity-100'} lg:px-4`}
           >
             {/* Drops Slideshow */}
-            <div className="w-full mb-8 relative flex flex-col items-start">
+            <div className="w-full mb-8 relative flex flex-col items-start px-4 lg:px-0">
               <h2 className="text-xl font-bold" style={{ color: '#39FF14' }}>Drops</h2>
               <p className="text-white text-sm mb-4">Latest NFT drops and releases.</p>
+              {/* Drop Image Section */}
               <div className="relative w-full overflow-hidden group drop-image-section" style={{ height: '400px', maxWidth: '100%' }}>
                 <Image
                   src={drops[slideIndex % drops.length].image_url}
                   alt={drops[slideIndex % drops.length].name}
                   fill
                   style={{ objectFit: 'cover', borderRadius: '0.5rem' }}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover lg:rounded-lg rounded-none"
                 />
-                {/* Overlay: rectangular, neon green border, 3 columns, label+value */}
-                <div className="absolute bottom-4 left-4 z-20 bg-black/80 rounded-lg px-6 py-4 flex flex-row items-center gap-10 min-w-[320px] max-w-[95vw]" style={{ border: '2px solid #39FF14' }}>
+                {/* Drop name above overlay - always white */}
+                <div className="absolute left-4 bottom-28 z-20 hidden lg:block">
+                  <h3 className="text-2xl font-extrabold text-white drop-shadow-lg tracking-wider">{drops[slideIndex % drops.length].name}</h3>
+                </div>
+                {/* Overlay: desktop only */}
+                <div className="absolute bottom-4 left-4 z-20 bg-black/80 rounded-lg px-6 py-4 flex flex-row items-center gap-10 min-w-[320px] max-w-[95vw] border-0 hidden lg:flex">
                   {/* Mint Price */}
                   <div className="flex flex-col items-start">
                     <span className="text-xs font-bold text-[#39FF14] uppercase tracking-widest mb-1">MINT PRICE</span>
@@ -182,14 +187,10 @@ export default function HomePage() {
                     <span className="text-lg font-mono font-bold text-white">01:01:31:25</span>
                   </div>
                 </div>
-                {/* Collection name just above the overlay, plain bold neon green text */}
-                <div className="absolute left-4 bottom-28 z-20">
-                  <h3 className="text-2xl font-extrabold text-white drop-shadow-lg tracking-wider">{drops[slideIndex % drops.length].name}</h3>
-                </div>
                 {/* Back button */}
                 <button
                   onClick={handlePrev}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-[#39FF14] rounded-full p-3 z-30 border-2 border-[#39FF14] opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-[#39FF14] hover:text-black"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-[#39FF14] rounded-full p-3 z-30 border-2 border-[#39FF14] opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-[#39FF14] hover:text-black hidden lg:block"
                   aria-label="Previous Drop"
                 >
                   <FaChevronLeft className="w-7 h-7" />
@@ -197,15 +198,35 @@ export default function HomePage() {
                 {/* Next button */}
                 <button
                   onClick={handleNext}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-[#39FF14] rounded-full p-3 z-30 border-2 border-[#39FF14] opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-[#39FF14] hover:text-black"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-[#39FF14] rounded-full p-3 z-30 border-2 border-[#39FF14] opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-[#39FF14] hover:text-black hidden lg:block"
                   aria-label="Next Drop"
                 >
                   <FaChevronRight className="w-7 h-7" />
                 </button>
               </div>
+              {/* Mobile drop name and details below image */}
+              <div className="block lg:hidden w-full mt-4">
+                <div className="bg-black/80 rounded-lg px-4 py-4 flex flex-col gap-4 w-full" style={{ border: '2px solid #39FF14' }}>
+                  <h3 className="text-2xl font-extrabold text-white mb-2">{drops[slideIndex % drops.length].name}</h3>
+                  <div className="flex flex-row items-center gap-6 w-full">
+                    <div className="flex flex-col items-start">
+                      <span className="text-xs font-bold text-[#39FF14] uppercase tracking-widest mb-1">MINT PRICE</span>
+                      <span className="text-lg font-mono font-bold text-white">{drops[slideIndex % drops.length].floor_price} PEPU</span>
+                    </div>
+                    <div className="flex flex-col items-start">
+                      <span className="text-xs font-bold text-[#39FF14] uppercase tracking-widest mb-1">TOTAL ITEMS</span>
+                      <span className="text-lg font-mono font-bold text-white">{drops[slideIndex % drops.length].items}</span>
+                    </div>
+                    <div className="flex flex-col items-start">
+                      <span className="text-xs font-bold text-[#39FF14] uppercase tracking-widest mb-1">MINT STARTS IN</span>
+                      <span className="text-lg font-mono font-bold text-white">01:01:31:25</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             {/* Featured Collections Horizontal Scroll */}
-            <div className="w-full mb-8">
+            <div className="w-full mb-8 px-4 lg:px-0">
               <h2 className="text-xl font-bold" style={{ color: '#39FF14' }}>Featured Collections</h2>
               <p className="text-white text-sm mb-4">Top curated collections for this week.</p>
               <motion.div
@@ -242,10 +263,10 @@ export default function HomePage() {
               </motion.div>
             </div>
             {/* Tabs above collections */}
-            <div className="flex gap-2 mb-8">
-              <button className="px-2 py-1 text-sm rounded-t-lg bg-green-500 text-black font-bold border-2 border-black lg:px-4 lg:py-2 lg:text-base">Newest</button>
-              <button className="px-2 py-1 text-sm rounded-t-lg bg-white text-black font-bold border-2 border-black lg:px-4 lg:py-2 lg:text-base">Trending</button>
-              <button className="px-2 py-1 text-sm rounded-t-lg bg-white text-black font-bold border-2 border-black lg:px-4 lg:py-2 lg:text-base">Mints</button>
+            <div className="flex gap-2 mb-4 h-9 items-center">
+              <button className="px-2 py-1 text-sm rounded-t-lg bg-green-500 text-black font-bold border-2 border-black">Newest</button>
+              <button className="px-2 py-1 text-sm rounded-t-lg bg-white text-black font-bold border-2 border-black">Trending</button>
+              <button className="px-2 py-1 text-sm rounded-t-lg bg-white text-black font-bold border-2 border-black">Mints</button>
             </div>
             {/* Collections container */}
             <div className="shadow-lg border-2 w-full lg:max-w-4xl lg:ml-0 lg:px-6 lg:rounded-lg" style={{ backgroundColor: '#000', borderColor: '#39FF14' }}>
@@ -278,12 +299,20 @@ export default function HomePage() {
                   </div>
                 ))}
                 {collections.length > 5 && !showAllCollections && (
-                  <button
-                    className="mt-4 w-full py-2 bg-green-500 text-black border-2 border-black rounded-md font-bold hover:bg-yellow-400 transition-colors text-base"
+                  <span
+                    className="mt-2 cursor-pointer text-[#39FF14] font-semibold hover:underline text-center w-full block"
                     onClick={() => setShowAllCollections(true)}
                   >
                     See more
-                  </button>
+                  </span>
+                )}
+                {collections.length > 5 && showAllCollections && (
+                  <span
+                    className="mt-2 cursor-pointer text-[#39FF14] font-semibold hover:underline text-center w-full block"
+                    onClick={() => setShowAllCollections(false)}
+                  >
+                    See less
+                  </span>
                 )}
               </div>
             </div>
