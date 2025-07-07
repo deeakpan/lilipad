@@ -2,725 +2,297 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { 
+  FaBars, FaTimes, FaHome, FaPlusCircle, FaInfoCircle, 
+  FaLayerGroup, FaUser, FaSearch, FaWallet, FaChartBar, 
+  FaFire, FaShoppingBag, FaGem, FaHistory, FaBullhorn,
+  FaHeart, FaAward, FaStar, FaBookmark, FaGift, FaChevronLeft, FaChevronRight
+} from "react-icons/fa";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import Header from "../components/Header";
+import Sidebar from "../components/Sidebar";
+
+const collections = [
+  { id: 1, name: "Frogs United", image_url: "/globe.svg", items: 120, minters: 45, floor_price: 2.5, volume: 1200 },
+  { id: 2, name: "Lily Legends", image_url: "/window.svg", items: 80, minters: 30, floor_price: 1.2, volume: 800 },
+  { id: 3, name: "Pad Masters", image_url: "/lily-removebg-preview.png", items: 200, minters: 60, floor_price: 3.1, volume: 2500 },
+  { id: 4, name: "Springfield", image_url: "/photo_2025-07-06_19-24-17.jpg", items: 99, minters: 40, floor_price: 4.2, volume: 1500 },
+  { id: 5, name: "Meta Frogs", image_url: "/vercel.svg", items: 150, minters: 55, floor_price: 2.9, volume: 1800 },
+  { id: 6, name: "Aqua Pads", image_url: "/next.svg", items: 110, minters: 38, floor_price: 1.7, volume: 950 },
+];
+
+// Dummy drops data (copy of collections for now)
+const drops = [
+  { id: 101, name: "Genesis Drop", image_url: "/globe.svg", floor_price: 2.1, items: 1000, mint_start: "2025-07-10" },
+  { id: 102, name: "Rare Mint", image_url: "/window.svg", floor_price: 1.8, items: 800, mint_start: "2025-07-12" },
+  { id: 103, name: "Pad Drop", image_url: "/lily-removebg-preview.png", floor_price: 2.7, items: 1200, mint_start: "2025-07-15" },
+  { id: 104, name: "Springfield Drop", image_url: "/photo_2025-07-06_19-24-17.jpg", floor_price: 3.9, items: 900, mint_start: "2025-07-18" },
+  { id: 105, name: "Meta Drop", image_url: "/vercel.svg", floor_price: 2.3, items: 1100, mint_start: "2025-07-20" },
+  { id: 106, name: "Aqua Drop", image_url: "/next.svg", floor_price: 1.5, items: 950, mint_start: "2025-07-22" },
+];
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState("Newest");
-  const [searchQuery, setSearchQuery] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
-  const [isWalletConnected, setIsWalletConnected] = useState(false);
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [slideIndex, setSlideIndex] = useState(0);
+  const [showAllCollections, setShowAllCollections] = useState(false);
 
-  // Mock data for collections
-  const collections = [
-    {
-      id: "1",
-      name: "LilyPad Warriors",
-      image_url: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=400&fit=crop",
-      items: 100,
-      minters: 47,
-      floor_price: "5",
-      volume: "2,450",
-      change: "+12.5%"
-    },
-    {
-      id: "2",
-      name: "Pepe Legends",
-      image_url: "https://images.unsplash.com/photo-1639762681057-408e52192e55?w=400&h=400&fit=crop",
-      items: 50,
-      minters: 23,
-      floor_price: "7.5",
-      volume: "1,890",
-      change: "+8.3%"
-    },
-    {
-      id: "3",
-      name: "Crypto Frogs",
-      image_url: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=400&fit=crop",
-      items: 200,
-      minters: 67,
-      floor_price: "2.5",
-      volume: "4,200",
-      change: "-2.1%"
-    },
-    {
-      id: "4",
-      name: "Digital Dragons",
-      image_url: "https://images.unsplash.com/photo-1639762681057-408e52192e55?w=400&h=400&fit=crop",
-      items: 75,
-      minters: 34,
-      floor_price: "10",
-      volume: "3,150",
-      change: "+15.7%"
-    }
-  ];
+  const handlePrev = () => setSlideIndex((prev) => (prev === 0 ? collections.length - 1 : prev - 1));
+  const handleNext = () => setSlideIndex((prev) => (prev === collections.length - 1 ? 0 : prev + 1));
 
-  // Mock data for featured slideshow
-  const featuredItems = [
-    {
-      id: "f1",
-      name: "Featured Collection 1",
-      image_url: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=1200&h=600&fit=crop",
-      description: "Exclusive NFT collection with unique traits and rare attributes",
-      price: "100 PEPU",
-      subtitle: "Limited Edition"
-    },
-    {
-      id: "f2", 
-      name: "Featured Collection 2",
-      image_url: "https://images.unsplash.com/photo-1639762681057-408e52192e55?w=1200&h=600&fit=crop",
-      description: "Limited edition digital art pieces from world-renowned artists",
-      price: "150 PEPU",
-      subtitle: "Artist Series"
-    },
-    {
-      id: "f3",
-      name: "Featured Collection 3", 
-      image_url: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=1200&h=600&fit=crop",
-      description: "Premium gaming NFTs with real utility and exclusive benefits",
-      price: "200 PEPU",
-      subtitle: "Gaming NFTs"
-    }
-  ];
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSlideIndex((prev) => (prev === collections.length - 1 ? 0 : prev + 1));
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [collections.length]);
 
-  // Mock data for trending collections
-  const trendingCollections = [
-    {
-      id: "t1",
-      name: "Trending #1",
-      image_url: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=300&h=300&fit=crop",
-      floor: "3.2",
-      volume: "890",
-      change: "+45%"
-    },
-    {
-      id: "t2",
-      name: "Trending #2",
-      image_url: "https://images.unsplash.com/photo-1639762681057-408e52192e55?w=300&h=300&fit=crop",
-      floor: "1.8",
-      volume: "650",
-      change: "+32%"
-    },
-    {
-      id: "t3",
-      name: "Trending #3",
-      image_url: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=300&h=300&fit=crop",
-      floor: "5.5",
-      volume: "1,200",
-      change: "+28%"
-    }
-  ];
-
-  // Mock data for recent activity
-  const recentActivity = [
-    { id: "1", action: "Sale", collection: "LilyPad Warriors", price: "5.2 PEPU", time: "2 min ago" },
-    { id: "2", action: "Listed", collection: "Pepe Legends", price: "7.8 PEPU", time: "5 min ago" },
-    { id: "3", action: "Bid", collection: "Crypto Frogs", price: "2.3 PEPU", time: "8 min ago" },
-    { id: "4", action: "Sale", collection: "Digital Dragons", price: "10.5 PEPU", time: "12 min ago" }
-  ];
-
-  const filteredCollections = collections.filter(collection =>
-    collection.name.toLowerCase().includes(searchQuery.toLowerCase())
+  // Dummy Connect Button (UI only)
+  const DummyConnectButton = () => (
+    <button
+      className="flex items-center gap-2 px-4 py-2 bg-green-500 text-black border-2 border-black rounded-md font-bold hover:bg-green-400"
+    >
+      <FaWallet className="w-4 h-4" />
+      <span>Connect Wallet</span>
+    </button>
   );
 
-  // Auto-play slideshow
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % featuredItems.length);
-    }, 5000);
+  // Mobile version of dummy connect button
+  const DummyMobileConnectButton = () => (
+    <button
+      className="flex items-center gap-1 px-3 py-1 bg-green-500 text-black border-2 border-black rounded-md font-bold hover:bg-green-400"
+      style={{ WebkitAppearance: 'none' }}
+    >
+      <FaWallet className="w-4 h-4" />
+      <span className="text-sm">Connect</span>
+    </button>
+  );
 
-    return () => clearInterval(interval);
-  }, [featuredItems.length]);
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % featuredItems.length);
+  // Sidebar animation variants
+  const sidebarVariants = {
+    open: { x: 0 },
+    closed: { x: "-100%" }
+  };
+  const overlayVariants = {
+    open: { opacity: 1 },
+    closed: { opacity: 0 }
   };
 
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + featuredItems.length) % featuredItems.length);
-  };
-
-  const handleWalletConnect = () => {
-    setIsWalletConnected(!isWalletConnected);
-  };
-
-  const renderComingSoon = (tabName: string) => {
-    return (
-      <div className="flex flex-col justify-center items-center h-64 bg-gray-900 rounded-lg border border-gray-700 shadow-lg p-8 w-full max-w-lg mx-auto">
-        <div className="text-gray-400 text-6xl mb-4">🚧</div>
-        <h2 className="text-3xl font-bold text-white mb-2">{tabName}</h2>
-        <p className="text-gray-300 text-xl">Coming Soon</p>
-        <div className="mt-6 bg-gray-700 text-white font-bold py-2 px-6 rounded-md border border-gray-600">
-          Stay Tuned!
-        </div>
-      </div>
-    );
-  };
-
-  const renderNoResults = () => {
-    return (
-      <div className="flex flex-col justify-center items-center h-64 bg-gray-900 rounded-lg border border-gray-700 shadow-lg p-8 w-full max-w-lg mx-auto">
-        <div className="text-gray-400 text-6xl mb-4">⚠️</div>
-        <h2 className="text-2xl font-bold text-white mb-2">Collection Not Found</h2>
-        <p className="text-gray-300 text-lg text-center">We couldn't find any collections matching your search.</p>
-        <button 
-          onClick={() => setSearchQuery("")} 
-          className="mt-6 bg-gray-700 text-white font-bold py-2 px-6 rounded-md border border-gray-600"
-        >
-          Clear Search
-        </button>
-      </div>
-    );
+  // Navigation categories (UI only)
+  const navigationCategories = {
+    explore: [
+      { name: "Collections", icon: <FaLayerGroup className="w-5 h-5" />, active: true },
+      { name: "Stats", icon: <FaChartBar className="w-5 h-5" />, active: false },
+      { name: "Drops", icon: <FaGift className="w-5 h-5" />, active: false },
+      { name: "Marketplace", icon: <FaShoppingBag className="w-5 h-5" />, active: false },
+      { name: "Rankings", icon: <FaAward className="w-5 h-5" />, active: false },
+    ],
+    create: [
+      { name: "Launchpad", icon: <FaPlusCircle className="w-5 h-5" />, active: true },
+      { name: "Create NFT", icon: <FaPlusCircle className="w-5 h-5" />, active: false },
+      { name: "My Collections", icon: <FaLayerGroup className="w-5 h-5" />, active: false },
+    ],
+    account: [
+      { name: "Profile", icon: <FaUser className="w-5 h-5" />, active: false },
+      { name: "Favorites", icon: <FaHeart className="w-5 h-5" />, active: false },
+      { name: "Transaction History", icon: <FaHistory className="w-5 h-5" />, active: false },
+      { name: "Watchlist", icon: <FaBookmark className="w-5 h-5" />, active: false },
+    ],
+    other: [
+      { name: "About", icon: <FaInfoCircle className="w-5 h-5" />, active: true },
+      { name: "News", icon: <FaBullhorn className="w-5 h-5" />, active: false },
+    ]
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Fixed Header */}
-      <div className="fixed top-0 left-0 right-0 w-full bg-gray-900 p-4 shadow-lg z-40 border-b border-gray-800">
-        <div className="max-w-7xl mx-auto">
-          {/* Mobile Header */}
-          <div className="lg:hidden">
-            <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center space-x-4">
-                <button 
-                  onClick={() => setSidebarOpen(!sidebarOpen)} 
-                  className="text-white"
-                >
-                  {sidebarOpen ? "✕" : "☰"}
-                </button>
-
-                {/* LilyPad Branding */}
-                <div className="flex items-center space-x-2">
-                  <Image 
-                    src="/lily-removebg-preview.png" 
-                    alt="LilyPad" 
-                    width={32} 
-                    height={32}
-                    className="object-contain"
-                  />
-                  <span className="text-lg font-bold text-white">LilyPad</span>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                {/* Search Icon */}
-                <button 
-                  onClick={() => setSearchVisible(!searchVisible)}
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </button>
-
-                <button
-                  onClick={handleWalletConnect}
-                  className={`flex items-center gap-1 px-3 py-1 border border-gray-600 rounded font-medium text-sm ${
-                    isWalletConnected 
-                      ? 'bg-gray-700 text-white' 
-                      : 'bg-gray-800 text-white hover:bg-gray-700'
-                  }`}
-                >
-                  {isWalletConnected ? 'Connected' : 'Connect'}
-                </button>
-              </div>
-            </div>
-
-            {/* Mobile Search Bar - Hidden by default */}
-            {searchVisible && (
-              <div className="mb-3">
-                <input 
-                  type="text" 
-                  placeholder="Search collections..."
-                  value={searchQuery} 
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-400 focus:outline-none focus:border-gray-600"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Desktop Header */}
-          <div className="hidden lg:flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              {/* LilyPad Branding */}
-              <div className="flex items-center space-x-2">
-                <Image 
-                  src="/lily-removebg-preview.png" 
-                  alt="LilyPad" 
-                  width={28} 
-                  height={28}
-                  className="object-contain"
-                />
-                <span className="text-xl font-bold text-white">LilyPad</span>
-              </div>
-              
-              {/* Search bar on desktop */}
-              <div className="relative">
-                <input 
-                  type="text" 
-                  placeholder="Search collections..."
-                  value={searchQuery} 
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="px-4 py-2 bg-gray-800 border border-gray-700 rounded w-80 text-white placeholder-gray-400 focus:outline-none focus:border-gray-600"
-                />
-              </div>
-              
-              {/* Navigation Items */}
-              <div className="flex items-center space-x-3 ml-8">
-                <button className="px-3 py-1.5 text-gray-300 hover:text-white hover:bg-gray-800 transition-colors font-medium text-sm rounded border border-transparent hover:border-gray-600">
-                  Collections
-                </button>
-                <button className="px-3 py-1.5 text-gray-300 hover:text-white hover:bg-gray-800 transition-colors font-medium text-sm rounded border border-transparent hover:border-gray-600">
-                  Launchpad
-                </button>
-                <button className="px-3 py-1.5 text-gray-300 hover:text-white hover:bg-gray-800 transition-colors font-medium text-sm rounded border border-transparent hover:border-gray-600">
-                  Drops
-                </button>
-                <button className="px-3 py-1.5 text-gray-300 hover:text-white hover:bg-gray-800 transition-colors font-medium text-sm rounded border border-transparent hover:border-gray-600">
-                  Auction
-                </button>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={handleWalletConnect}
-                className={`flex items-center gap-2 px-4 py-2 border border-gray-600 rounded font-medium ${
-                  isWalletConnected 
-                    ? 'bg-gray-700 text-white' 
-                    : 'bg-gray-800 text-white hover:bg-gray-700'
-                }`}
-              >
-                {isWalletConnected ? 'Connected' : 'Connect Wallet'}
-              </button>
-              
-              {/* Profile Icon */}
-              <button className="w-10 h-10 bg-gray-800 border border-gray-700 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors">
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile Sidebar */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
-      )}
-      <div className={`fixed top-0 left-0 h-screen w-64 bg-gray-900 border-r border-gray-800 z-50 lg:hidden transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="h-16 flex items-center justify-between px-6 border-b border-gray-800">
-          <h2 className="text-xl font-bold text-white">Menu</h2>
-          <button 
-            onClick={() => setSidebarOpen(false)}
-            className="text-gray-400 hover:text-white"
+    <div className="min-h-screen bg-dark-green text-white">
+      {/* Header */}
+      <Header
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        searchVisible={searchVisible}
+        setSearchVisible={setSearchVisible}
+      />
+      {/* Sidebar */}
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.aside
+            key="mobile-sidebar"
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ type: 'tween', duration: 0.3 }}
+            className="fixed inset-y-0 left-0 z-50 w-64 h-screen border-r-2 border-black bg-[#223d94] lg:hidden shadow-xl"
           >
-            ✕
-          </button>
-        </div>
-        <div className="p-6">
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-sm uppercase text-gray-400 font-bold tracking-wider mb-4">Navigation</h3>
-              <div className="space-y-3">
-                <button className="w-full text-left px-4 py-3 text-white hover:bg-gray-800 rounded-lg transition-colors font-medium">
-                  Collections
-                </button>
-                <button className="w-full text-left px-4 py-3 text-white hover:bg-gray-800 rounded-lg transition-colors font-medium">
-                  Launchpad
-                </button>
-                <button className="w-full text-left px-4 py-3 text-white hover:bg-gray-800 rounded-lg transition-colors font-medium">
-                  Drops
-                </button>
-                <button className="w-full text-left px-4 py-3 text-white hover:bg-gray-800 rounded-lg transition-colors font-medium">
-                  Auction
-                </button>
-                <button className="w-full text-left px-4 py-3 text-blue-400 hover:bg-gray-800 rounded-lg transition-colors font-medium">
-                  Dashboard
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className="bg-black min-h-screen" style={{ paddingTop: "calc(4rem + 48px)" }}>
-        <div className="w-full bg-black min-h-screen">
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
-            
-            {/* Stats Bar */}
-            {/* Mobile Stats - Compact */}
-            <div className="md:hidden bg-gray-900 rounded-lg p-3 border border-gray-800 mb-6">
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Vol:</span>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-white font-bold">12,450 PEPU</span>
-                    <span className="text-green-400">+8.5%</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Floor:</span>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-white font-bold">5.2 PEPU</span>
-                    <span className="text-green-400">+2.1%</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Sold:</span>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-white font-bold">1,234</span>
-                    <span className="text-green-400">+15.3%</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Users:</span>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-white font-bold">456</span>
-                    <span className="text-green-400">+12.7%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Desktop Stats - Full Layout */}
-            <div className="hidden md:grid md:grid-cols-4 gap-4 mb-8">
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-                <div className="text-gray-400 text-sm">Total Volume</div>
-                <div className="text-white text-xl font-bold">12,450 PEPU</div>
-                <div className="text-green-400 text-sm">+8.5%</div>
-              </div>
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-                <div className="text-gray-400 text-sm">Floor Price</div>
-                <div className="text-white text-xl font-bold">5.2 PEPU</div>
-                <div className="text-green-400 text-sm">+2.1%</div>
-              </div>
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-                <div className="text-gray-400 text-sm">Items Sold</div>
-                <div className="text-white text-xl font-bold">1,234</div>
-                <div className="text-green-400 text-sm">+15.3%</div>
-              </div>
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-                <div className="text-gray-400 text-sm">Active Users</div>
-                <div className="text-white text-xl font-bold">456</div>
-                <div className="text-green-400 text-sm">+12.7%</div>
-              </div>
-            </div>
-
-            {/* Featured Slideshow Section */}
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold text-white mb-3">Featured Collections</h2>
-              <div className="relative w-full">
-                {/* Main Slideshow */}
-                <div className="relative w-full h-48 sm:h-64 md:h-80 rounded-lg overflow-hidden border border-gray-800 shadow-lg">
-                  <Image 
-                    src={featuredItems[currentSlide].image_url} 
-                    alt={featuredItems[currentSlide].name} 
+            <Sidebar mobile={true} />
+          </motion.aside>
+        )}
+        {sidebarOpen && (
+          <motion.div
+            key="mobile-sidebar-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-40 bg-black lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+      {/* Desktop Sidebar */}
+      <Sidebar mobile={false} />
+      <div className="flex">
+        {/* Sidebar always visible on desktop, toggled on mobile */}
+        <div className="flex-1 bg-dark-green min-h-screen lg:ml-64 overflow-y-auto" style={{ paddingTop: "calc(4rem + 48px)" }}>
+          <div className="w-full bg-blue-500 min-h-screen">
+            <div 
+              className={`py-6 transition-all duration-300 ${sidebarOpen ? 'opacity-50 pointer-events-none' : 'opacity-100'} lg:px-4`}
+            >
+              {/* Drops Slideshow */}
+              <div className="w-full mb-8 relative flex flex-col items-start">
+                <h2 className="text-xl font-bold text-yellow-300 mb-3">Drops</h2>
+                <p className="text-white text-sm mb-4">Latest NFT drops and releases.</p>
+                <div className="relative w-full aspect-[3/1.1] overflow-hidden group">
+                  <Image
+                    src={drops[slideIndex % drops.length].image_url}
+                    alt={drops[slideIndex % drops.length].name}
                     fill
-                    className="object-cover transition-all duration-500 ease-in-out"
-                    priority
+                    style={{ objectFit: 'cover' }}
+                    className="w-full h-full object-cover border-2 border-black rounded-lg"
                   />
-                  
-                  {/* Overlay with content */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/25 to-transparent">
-                    <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-6 text-white">
-                      <div className="text-xs text-blue-400 font-medium mb-1 sm:mb-2 uppercase tracking-wider">
-                        {featuredItems[currentSlide].subtitle}
+                  {/* Overlay: rectangular, gray, 3 columns, label+value, like screenshot */}
+                  <div className="absolute bottom-4 left-4 z-20 bg-gray-800/50 rounded-lg px-6 py-4 flex flex-row items-center gap-10 min-w-[320px] max-w-[95vw] border border-gray-600">
+                    {/* Mint Price */}
+                    <div className="flex flex-col items-start">
+                      <span className="text-xs font-bold text-gray-300 uppercase tracking-widest mb-1">MINT PRICE</span>
+                      <span className="text-lg font-mono font-bold text-white">{drops[slideIndex % drops.length].floor_price} PEPU</span>
+                    </div>
+                    {/* Total Items */}
+                    <div className="flex flex-col items-start">
+                      <span className="text-xs font-bold text-gray-300 uppercase tracking-widest mb-1">TOTAL ITEMS</span>
+                      <span className="text-lg font-mono font-bold text-white">{drops[slideIndex % drops.length].items}</span>
+                    </div>
+                    {/* Mint Starts In */}
+                    <div className="flex flex-col items-start">
+                      <span className="text-xs font-bold text-gray-300 uppercase tracking-widest mb-1">MINT STARTS IN</span>
+                      <span className="text-lg font-mono font-bold text-white">01:01:31:25</span>
+                    </div>
+                  </div>
+                  {/* Collection name just above the overlay, plain bold white text */}
+                  <div className="absolute left-4 bottom-28 z-20">
+                    <h3 className="text-2xl font-extrabold text-white drop-shadow-lg tracking-wider">{drops[slideIndex % drops.length].name}</h3>
+                  </div>
+                  {/* Back button */}
+                  <button
+                    onClick={handlePrev}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-3 z-30 border-2 border-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-green-500 hover:text-black"
+                    aria-label="Previous Drop"
+                  >
+                    <FaChevronLeft className="w-7 h-7" />
+                  </button>
+                  {/* Next button */}
+                  <button
+                    onClick={handleNext}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-3 z-30 border-2 border-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-green-500 hover:text-black"
+                    aria-label="Next Drop"
+                  >
+                    <FaChevronRight className="w-7 h-7" />
+                  </button>
+                </div>
+              </div>
+              {/* Featured Collections Horizontal Scroll */}
+              <div className="w-full mb-8">
+                <h2 className="text-xl font-bold text-yellow-300 mb-3">Featured Collections</h2>
+                <p className="text-white text-sm mb-4">Top curated collections for this week.</p>
+                <motion.div
+                  className="flex gap-4 overflow-x-auto pb-2 no-scrollbar snap-x snap-mandatory"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.4 }}
+                  style={{ WebkitOverflowScrolling: 'touch' }}
+                >
+                  {collections.map((col) => (
+                    <motion.div
+                      key={col.id}
+                      className="relative rounded-lg border-2 border-black overflow-hidden shadow-md bg-transparent flex-shrink-0 w-[270px] h-[170px] snap-start"
+                      whileHover={{ scale: 1.04, boxShadow: '0 4px 24px rgba(0,0,0,0.18)' }}
+                    >
+                      <Image
+                        src={col.image_url}
+                        alt={col.name}
+                        fill
+                        style={{ objectFit: 'cover' }}
+                        className="w-full h-full object-cover border-none"
+                      />
+                      {/* Overlayed text */}
+                      <div className="absolute left-0 bottom-0 w-full flex flex-col items-start p-4 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
+                        <div className="flex items-center gap-1 mb-1 flex-wrap w-full">
+                          <span className="text-white text-[17px] font-bold drop-shadow-md whitespace-normal break-words leading-tight w-auto">{col.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap w-full">
+                          <span className="text-gray-300 text-[15px] font-semibold">Floor price: <span className="text-white font-bold">{col.floor_price}</span> PEPU</span>
+                        </div>
                       </div>
-                      <h3 className="text-lg sm:text-2xl font-bold mb-1 sm:mb-2">{featuredItems[currentSlide].name}</h3>
-                      <p className="text-gray-300 mb-2 sm:mb-4 max-w-sm text-xs sm:text-sm leading-relaxed hidden sm:block">{featuredItems[currentSlide].description}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm sm:text-xl font-bold text-blue-400">{featuredItems[currentSlide].price}</span>
-                        <button className="bg-blue-600 text-white px-2 py-1 sm:px-4 sm:py-2 rounded text-xs sm:text-sm font-medium hover:bg-blue-700 transition-colors">
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </div>
+              {/* Tabs above collections */}
+              <div className="flex gap-2 mb-8">
+                <button className="px-2 py-1 text-sm rounded-t-lg bg-green-500 text-black font-bold border-2 border-black lg:px-4 lg:py-2 lg:text-base">Newest</button>
+                <button className="px-2 py-1 text-sm rounded-t-lg bg-white text-black font-bold border-2 border-black lg:px-4 lg:py-2 lg:text-base">Trending</button>
+                <button className="px-2 py-1 text-sm rounded-t-lg bg-white text-black font-bold border-2 border-black lg:px-4 lg:py-2 lg:text-base">Mints</button>
+              </div>
+              {/* Collections container */}
+              <div className="shadow-lg border-2 border-black w-full lg:max-w-4xl lg:ml-0 lg:px-6 lg:rounded-lg" style={{ backgroundColor: '#223d94' }}>
+                {/* Title Container */}
+                <div className="pt-6 pb-4 border-b-2 border-black rounded-t-lg px-4 lg:px-6" style={{ backgroundColor: '#223d94' }}>
+                  <h2 className="text-2xl font-bold text-white">Collections</h2>
+                </div>
+                {/* Card List Container */}
+                <div className="flex flex-col gap-4 py-6 rounded-b-lg items-start px-2 sm:px-4 md:px-6 lg:px-6" style={{ backgroundColor: '#223d94' }}>
+                  {(showAllCollections ? collections : collections.slice(0, 5)).map((collection) => (
+                    <div key={collection.id} className="flex items-center py-4 w-full">
+                      <div className="w-20 h-20 relative flex-shrink-0 mr-6">
+                        <Image 
+                          src={collection.image_url || "/placeholder.jpg"} 
+                          alt={collection.name} 
+                          layout="fill"
+                          objectFit="cover"
+                          className="rounded-lg border border-black"
+                        />
+                      </div>
+                      <div className="flex-1 flex flex-col justify-center">
+                        <h3 className="text-lg font-bold text-white mb-1">{collection.name}</h3>
+                        <span className="text-sm text-green-300 font-semibold">Floor: {collection.floor_price} PEPU</span>
+                      </div>
+                      <div className="flex-1 flex justify-end">
+                        <button className="px-4 py-2 bg-green-500 text-black border-2 border-black rounded-md font-bold hover:bg-yellow-400 transition-colors text-sm">
                           View
                         </button>
                       </div>
                     </div>
-                  </div>
-                  
-                  {/* Navigation Buttons */}
-                  <button 
-                    onClick={prevSlide}
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
-                    aria-label="Previous slide"
-                  >
-                    <span className="text-lg">‹</span>
-                  </button>
-                  <button 
-                    onClick={nextSlide}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
-                    aria-label="Next slide"
-                  >
-                    <span className="text-lg">›</span>
-                  </button>
-                </div>
-                
-                {/* Slide Indicators */}
-                <div className="flex space-x-2 mt-4">
-                  {featuredItems.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentSlide(index)}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        index === currentSlide 
-                          ? 'bg-blue-500' 
-                          : 'bg-gray-600 hover:bg-gray-500'
-                      }`}
-                      aria-label={`Go to slide ${index + 1}`}
-                    />
                   ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
-              {/* Left Column - Collections */}
-              <div className="lg:col-span-2">
-                {/* Tabs Section */}
-                <div className="mb-6">
-                  <div className="flex space-x-1">
-                    {["Newest", "Top", "Mints"].map((tab) => (
-                      <button 
-                        key={tab} 
-                        onClick={() => setActiveTab(tab)} 
-                        className={`px-4 py-2 rounded text-sm font-medium border transition
-                          ${activeTab === tab ? 'bg-gray-700 text-white border-gray-600' : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700'}`}
-                      >
-                        {tab}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Collections List */}
-                {activeTab === "Newest" ? (
-                  <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 sm:p-6">
-                    <div className="text-lg sm:text-xl font-bold text-white mb-4">Collections</div>
-                    
-                    <div className="space-y-3">
-                      {filteredCollections.length > 0 ? (
-                        filteredCollections.map((collection, index) => (
-                          <div 
-                            key={collection.id} 
-                            className="flex items-center space-x-2 sm:space-x-4 p-3 sm:p-4 hover:bg-gray-800 transition-colors rounded-lg"
-                          >
-                            {/* Number */}
-                            <div className="text-gray-400 font-bold text-sm sm:text-lg w-6 sm:w-8">
-                              #{index + 1}
-                            </div>
-                            
-                            {/* Image */}
-                            <div className="w-16 h-20 sm:w-24 sm:h-32 relative rounded-lg overflow-hidden flex-shrink-0">
-                              <Image 
-                                src={collection.image_url} 
-                                alt={collection.name} 
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                            
-                            {/* Collection Info */}
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-white font-semibold text-sm sm:text-lg truncate">{collection.name}</h3>
-                              <div className="flex items-center space-x-2 sm:space-x-4 mt-1 text-xs sm:text-sm text-gray-400">
-                                <span>{collection.items} items</span>
-                                <span>{collection.minters} minters</span>
-                              </div>
-                            </div>
-                            
-                            {/* Price and Volume */}
-                            <div className="flex items-center space-x-3 sm:space-x-6 text-xs sm:text-sm">
-                              <div className="text-center">
-                                <div className="text-blue-400 font-bold text-sm sm:text-lg">{collection.floor_price}</div>
-                                <div className="text-gray-400 text-xs">PEPU</div>
-                              </div>
-                              <div className="text-center hidden sm:block">
-                                <div className="text-gray-300 font-medium">{collection.volume}</div>
-                                <div className="text-gray-400 text-xs">volume</div>
-                              </div>
-                              <div className={`text-xs sm:text-sm font-medium ${collection.change.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
-                                {collection.change}
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="w-full">
-                          {renderNoResults()}
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Show More Button */}
-                    <div className="mt-6 text-center">
-                      <button className="px-6 py-2 bg-gray-800 text-white border border-gray-700 rounded-lg hover:bg-gray-700 transition-colors font-medium">
-                        Show More
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex justify-center items-center">
-                    {renderComingSoon(activeTab)}
-                  </div>
-                )}
-              </div>
-
-              {/* Right Column - Sidebar */}
-              <div className="space-y-4 lg:space-y-6">
-                {/* Trending Collections */}
-                <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 sm:p-6">
-                  <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">Trending</h3>
-                  <div className="space-y-3 sm:space-y-4">
-                    {trendingCollections.map((collection, index) => (
-                      <div key={collection.id} className="flex items-center space-x-2 sm:space-x-3">
-                        <div className="text-gray-400 font-bold text-xs sm:text-sm w-4 sm:w-6">#{index + 1}</div>
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 relative rounded-lg overflow-hidden flex-shrink-0">
-                          <Image 
-                            src={collection.image_url} 
-                            alt={collection.name} 
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-white font-medium text-xs sm:text-sm truncate">{collection.name}</h4>
-                          <div className="text-gray-400 text-xs">{collection.floor} PEPU</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-green-400 text-xs sm:text-sm font-medium">{collection.change}</div>
-                          <div className="text-gray-400 text-xs">{collection.volume}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Recent Activity */}
-                <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 sm:p-6">
-                  <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">Recent Activity</h3>
-                  <div className="space-y-2 sm:space-y-3">
-                    {recentActivity.map((activity) => (
-                      <div key={activity.id} className="flex items-center justify-between text-xs sm:text-sm">
-                        <div className="flex items-center space-x-1 sm:space-x-2">
-                          <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
-                            activity.action === 'Sale' ? 'bg-green-400' : 
-                            activity.action === 'Listed' ? 'bg-blue-400' : 'bg-yellow-400'
-                          }`}></div>
-                          <span className="text-gray-300">{activity.action}</span>
-                          <span className="text-gray-400">•</span>
-                          <span className="text-white font-medium truncate max-w-20 sm:max-w-none">{activity.collection}</span>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-blue-400 font-medium">{activity.price}</div>
-                          <div className="text-gray-400 text-xs">{activity.time}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 sm:p-6">
-                  <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">Quick Actions</h3>
-                  <div className="space-y-2 sm:space-y-3">
-                    <button className="w-full bg-blue-600 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm">
-                      Launch NFT Collection
+                  {collections.length > 5 && !showAllCollections && (
+                    <button
+                      className="mt-4 w-full py-2 bg-green-500 text-black border-2 border-black rounded-md font-bold hover:bg-yellow-400 transition-colors text-base"
+                      onClick={() => setShowAllCollections(true)}
+                    >
+                      See more
                     </button>
-                    <button className="w-full bg-gray-800 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-gray-700 transition-colors font-medium border border-gray-700 text-sm">
-                      Create Auction
-                    </button>
-                    <button className="w-full bg-gray-800 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-gray-700 transition-colors font-medium border border-gray-700 text-sm">
-                      View Analytics
-                    </button>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 border-t border-gray-800 mt-16">
-        <div className="max-w-7xl mx-auto px-4 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {/* Brand Section */}
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center space-x-2 mb-4">
-                <Image 
-                  src="/lily-removebg-preview.png" 
-                  alt="LilyPad" 
-                  width={32} 
-                  height={32}
-                  className="object-contain"
-                />
-                <span className="text-xl font-bold text-white">LilyPad</span>
-              </div>
-              <p className="text-gray-400 mb-4 max-w-md">
-                The #1 NFT marketplace on Pepe Unchained L2. Discover, collect, and trade unique digital assets. 
-                Launch your NFT collection with ease.
-              </p>
-              <div className="flex space-x-4">
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
-                  </svg>
-                </a>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.402.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.357-.629-2.746-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24.009 12.017 24.009c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641.001 12.017.001z"/>
-                  </svg>
-                </a>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                  </svg>
-                </a>
-              </div>
-            </div>
-
-            {/* Quick Links */}
-            <div>
-              <h3 className="text-white font-semibold mb-4">Quick Links</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Explore</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Create</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Stats</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Resources</a></li>
-              </ul>
-            </div>
-
-            {/* NFT Services */}
-            <div>
-              <h3 className="text-white font-semibold mb-4">NFT Services</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Launch NFT</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">List Auction</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Mint Collection</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Marketplace</a></li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Bottom Section */}
-          <div className="border-t border-gray-800 mt-8 pt-8">
-            <div className="flex flex-col md:flex-row justify-between items-center">
-              <div className="text-gray-400 text-sm mb-4 md:mb-0">
-                © 2025 LilyPad. All rights reserved.
-              </div>
-              <div className="flex space-x-6 text-sm">
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</a>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">Terms of Service</a>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">Cookie Policy</a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
