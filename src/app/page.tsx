@@ -349,10 +349,45 @@ export default function HomePage() {
       {/* Main content */}
       <div className="bg-black min-h-screen" style={{ paddingTop: "calc(4rem + 48px)" }}>
         <div className="w-full bg-black min-h-screen">
-          <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
             
             {/* Stats Bar */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {/* Mobile Stats - Compact */}
+            <div className="md:hidden bg-gray-900 rounded-lg p-3 border border-gray-800 mb-6">
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Vol:</span>
+                  <div className="flex items-center space-x-1">
+                    <span className="text-white font-bold">12,450 PEPU</span>
+                    <span className="text-green-400">+8.5%</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Floor:</span>
+                  <div className="flex items-center space-x-1">
+                    <span className="text-white font-bold">5.2 PEPU</span>
+                    <span className="text-green-400">+2.1%</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Sold:</span>
+                  <div className="flex items-center space-x-1">
+                    <span className="text-white font-bold">1,234</span>
+                    <span className="text-green-400">+15.3%</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Users:</span>
+                  <div className="flex items-center space-x-1">
+                    <span className="text-white font-bold">456</span>
+                    <span className="text-green-400">+12.7%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop Stats - Full Layout */}
+            <div className="hidden md:grid md:grid-cols-4 gap-4 mb-8">
               <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
                 <div className="text-gray-400 text-sm">Total Volume</div>
                 <div className="text-white text-xl font-bold">12,450 PEPU</div>
@@ -376,11 +411,11 @@ export default function HomePage() {
             </div>
 
             {/* Featured Slideshow Section */}
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-white mb-4">Featured Collections</h2>
-              <div className="relative w-full max-w-3xl">
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-white mb-3">Featured Collections</h2>
+              <div className="relative w-full">
                 {/* Main Slideshow */}
-                <div className="relative w-full h-80 rounded-lg overflow-hidden border border-gray-800 shadow-lg">
+                <div className="relative w-full h-48 sm:h-64 md:h-80 rounded-lg overflow-hidden border border-gray-800 shadow-lg">
                   <Image 
                     src={featuredItems[currentSlide].image_url} 
                     alt={featuredItems[currentSlide].name} 
@@ -391,16 +426,16 @@ export default function HomePage() {
                   
                   {/* Overlay with content */}
                   <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/25 to-transparent">
-                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                      <div className="text-xs text-blue-400 font-medium mb-2 uppercase tracking-wider">
+                    <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-6 text-white">
+                      <div className="text-xs text-blue-400 font-medium mb-1 sm:mb-2 uppercase tracking-wider">
                         {featuredItems[currentSlide].subtitle}
                       </div>
-                      <h3 className="text-2xl font-bold mb-2">{featuredItems[currentSlide].name}</h3>
-                      <p className="text-gray-300 mb-4 max-w-sm text-sm leading-relaxed">{featuredItems[currentSlide].description}</p>
+                      <h3 className="text-lg sm:text-2xl font-bold mb-1 sm:mb-2">{featuredItems[currentSlide].name}</h3>
+                      <p className="text-gray-300 mb-2 sm:mb-4 max-w-sm text-xs sm:text-sm leading-relaxed hidden sm:block">{featuredItems[currentSlide].description}</p>
                       <div className="flex items-center justify-between">
-                        <span className="text-xl font-bold text-blue-400">{featuredItems[currentSlide].price}</span>
-                        <button className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors">
-                          View Collection
+                        <span className="text-sm sm:text-xl font-bold text-blue-400">{featuredItems[currentSlide].price}</span>
+                        <button className="bg-blue-600 text-white px-2 py-1 sm:px-4 sm:py-2 rounded text-xs sm:text-sm font-medium hover:bg-blue-700 transition-colors">
+                          View
                         </button>
                       </div>
                     </div>
@@ -442,7 +477,7 @@ export default function HomePage() {
             </div>
 
             {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
               {/* Left Column - Collections */}
               <div className="lg:col-span-2">
                 {/* Tabs Section */}
@@ -463,23 +498,23 @@ export default function HomePage() {
 
                 {/* Collections List */}
                 {activeTab === "Newest" ? (
-                  <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
-                    <div className="text-xl font-bold text-white mb-4">Collections</div>
+                  <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 sm:p-6">
+                    <div className="text-lg sm:text-xl font-bold text-white mb-4">Collections</div>
                     
                     <div className="space-y-3">
                       {filteredCollections.length > 0 ? (
                         filteredCollections.map((collection, index) => (
                           <div 
                             key={collection.id} 
-                            className="flex items-center space-x-4 p-4 hover:bg-gray-800 transition-colors rounded-lg"
+                            className="flex items-center space-x-2 sm:space-x-4 p-3 sm:p-4 hover:bg-gray-800 transition-colors rounded-lg"
                           >
                             {/* Number */}
-                            <div className="text-gray-400 font-bold text-lg w-8">
+                            <div className="text-gray-400 font-bold text-sm sm:text-lg w-6 sm:w-8">
                               #{index + 1}
                             </div>
                             
                             {/* Image */}
-                            <div className="w-24 h-32 relative rounded-lg overflow-hidden flex-shrink-0">
+                            <div className="w-16 h-20 sm:w-24 sm:h-32 relative rounded-lg overflow-hidden flex-shrink-0">
                               <Image 
                                 src={collection.image_url} 
                                 alt={collection.name} 
@@ -490,24 +525,24 @@ export default function HomePage() {
                             
                             {/* Collection Info */}
                             <div className="flex-1 min-w-0">
-                              <h3 className="text-white font-semibold text-lg truncate">{collection.name}</h3>
-                              <div className="flex items-center space-x-4 mt-1 text-sm text-gray-400">
+                              <h3 className="text-white font-semibold text-sm sm:text-lg truncate">{collection.name}</h3>
+                              <div className="flex items-center space-x-2 sm:space-x-4 mt-1 text-xs sm:text-sm text-gray-400">
                                 <span>{collection.items} items</span>
                                 <span>{collection.minters} minters</span>
                               </div>
                             </div>
                             
                             {/* Price and Volume */}
-                            <div className="flex items-center space-x-6 text-sm">
+                            <div className="flex items-center space-x-3 sm:space-x-6 text-xs sm:text-sm">
                               <div className="text-center">
-                                <div className="text-blue-400 font-bold text-lg">{collection.floor_price}</div>
+                                <div className="text-blue-400 font-bold text-sm sm:text-lg">{collection.floor_price}</div>
                                 <div className="text-gray-400 text-xs">PEPU</div>
                               </div>
-                              <div className="text-center">
+                              <div className="text-center hidden sm:block">
                                 <div className="text-gray-300 font-medium">{collection.volume}</div>
                                 <div className="text-gray-400 text-xs">volume</div>
                               </div>
-                              <div className={`text-sm font-medium ${collection.change.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
+                              <div className={`text-xs sm:text-sm font-medium ${collection.change.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
                                 {collection.change}
                               </div>
                             </div>
@@ -535,15 +570,15 @@ export default function HomePage() {
               </div>
 
               {/* Right Column - Sidebar */}
-              <div className="space-y-6">
+              <div className="space-y-4 lg:space-y-6">
                 {/* Trending Collections */}
-                <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
-                  <h3 className="text-lg font-bold text-white mb-4">Trending</h3>
-                  <div className="space-y-4">
+                <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">Trending</h3>
+                  <div className="space-y-3 sm:space-y-4">
                     {trendingCollections.map((collection, index) => (
-                      <div key={collection.id} className="flex items-center space-x-3">
-                        <div className="text-gray-400 font-bold text-sm w-6">#{index + 1}</div>
-                        <div className="w-12 h-12 relative rounded-lg overflow-hidden flex-shrink-0">
+                      <div key={collection.id} className="flex items-center space-x-2 sm:space-x-3">
+                        <div className="text-gray-400 font-bold text-xs sm:text-sm w-4 sm:w-6">#{index + 1}</div>
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 relative rounded-lg overflow-hidden flex-shrink-0">
                           <Image 
                             src={collection.image_url} 
                             alt={collection.name} 
@@ -552,11 +587,11 @@ export default function HomePage() {
                           />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-white font-medium text-sm truncate">{collection.name}</h4>
+                          <h4 className="text-white font-medium text-xs sm:text-sm truncate">{collection.name}</h4>
                           <div className="text-gray-400 text-xs">{collection.floor} PEPU</div>
                         </div>
                         <div className="text-right">
-                          <div className="text-green-400 text-sm font-medium">{collection.change}</div>
+                          <div className="text-green-400 text-xs sm:text-sm font-medium">{collection.change}</div>
                           <div className="text-gray-400 text-xs">{collection.volume}</div>
                         </div>
                       </div>
@@ -565,19 +600,19 @@ export default function HomePage() {
                 </div>
 
                 {/* Recent Activity */}
-                <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
-                  <h3 className="text-lg font-bold text-white mb-4">Recent Activity</h3>
-                  <div className="space-y-3">
+                <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">Recent Activity</h3>
+                  <div className="space-y-2 sm:space-y-3">
                     {recentActivity.map((activity) => (
-                      <div key={activity.id} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center space-x-2">
-                          <div className={`w-2 h-2 rounded-full ${
+                      <div key={activity.id} className="flex items-center justify-between text-xs sm:text-sm">
+                        <div className="flex items-center space-x-1 sm:space-x-2">
+                          <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
                             activity.action === 'Sale' ? 'bg-green-400' : 
                             activity.action === 'Listed' ? 'bg-blue-400' : 'bg-yellow-400'
                           }`}></div>
                           <span className="text-gray-300">{activity.action}</span>
                           <span className="text-gray-400">•</span>
-                          <span className="text-white font-medium">{activity.collection}</span>
+                          <span className="text-white font-medium truncate max-w-20 sm:max-w-none">{activity.collection}</span>
                         </div>
                         <div className="text-right">
                           <div className="text-blue-400 font-medium">{activity.price}</div>
@@ -589,16 +624,16 @@ export default function HomePage() {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
-                  <h3 className="text-lg font-bold text-white mb-4">Quick Actions</h3>
-                  <div className="space-y-3">
-                    <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">Quick Actions</h3>
+                  <div className="space-y-2 sm:space-y-3">
+                    <button className="w-full bg-blue-600 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm">
                       Launch NFT Collection
                     </button>
-                    <button className="w-full bg-gray-800 text-white py-3 px-4 rounded-lg hover:bg-gray-700 transition-colors font-medium border border-gray-700">
+                    <button className="w-full bg-gray-800 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-gray-700 transition-colors font-medium border border-gray-700 text-sm">
                       Create Auction
                     </button>
-                    <button className="w-full bg-gray-800 text-white py-3 px-4 rounded-lg hover:bg-gray-700 transition-colors font-medium border border-gray-700">
+                    <button className="w-full bg-gray-800 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-gray-700 transition-colors font-medium border border-gray-700 text-sm">
                       View Analytics
                     </button>
                   </div>
