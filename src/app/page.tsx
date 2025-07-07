@@ -39,6 +39,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [slideIndex, setSlideIndex] = useState(0);
   const [showAllCollections, setShowAllCollections] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handlePrev = () => setSlideIndex((prev) => (prev === 0 ? collections.length - 1 : prev - 1));
   const handleNext = () => setSlideIndex((prev) => (prev === collections.length - 1 ? 0 : prev + 1));
@@ -128,7 +129,7 @@ export default function HomePage() {
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'tween', duration: 0.3 }}
-            className="fixed inset-y-0 left-0 z-50 w-64 h-screen border-r-2 border-black bg-[#223d94] lg:hidden shadow-xl"
+            className="fixed inset-y-0 left-0 z-50 w-64 h-screen border-r-2 border-black bg-black lg:hidden shadow-xl"
           >
             <Sidebar mobile={true} />
           </motion.aside>
@@ -146,8 +147,8 @@ export default function HomePage() {
         )}
       </AnimatePresence>
       {/* Desktop Sidebar */}
-      <Sidebar mobile={false} />
-      <div className="flex-1 overflow-y-auto lg:ml-64 pt-16" style={{ height: '100vh', overflowX: 'hidden' }}>
+      <Sidebar mobile={false} collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
+      <div className={`flex-1 overflow-y-auto pt-16 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`} style={{ height: '100vh', overflowX: 'hidden' }}>
         <div className="w-full max-w-[1200px] mx-auto">
           <div 
             className={`py-6 transition-all duration-300 ${sidebarOpen ? 'opacity-50 pointer-events-none' : 'opacity-100'} lg:px-4`}

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { FaLayerGroup, FaChartBar, FaGift, FaShoppingBag, FaAward, FaPlusCircle, FaUser, FaHeart, FaHistory, FaBookmark, FaInfoCircle, FaBullhorn } from "react-icons/fa";
 
 const navigationCategories = {
@@ -26,19 +26,18 @@ const navigationCategories = {
   ]
 };
 
-export default function Sidebar({ mobile = false }: { mobile?: boolean } = {}) {
-  const [collapsed, setCollapsed] = useState(false);
+export default function Sidebar({ mobile = false, collapsed = false, setCollapsed }: { mobile?: boolean, collapsed?: boolean, setCollapsed?: (v: boolean) => void } = {}) {
   const content = (
     <>
       <div className="sticky top-0 p-4 border-b-2 bg-black z-50" style={{ borderColor: '#39FF14' }}>
         <h2 className={`text-xl font-bold text-white text-left transition-all duration-300 ${collapsed ? 'hidden' : ''}`}>Menu</h2>
       </div>
       {/* Floating collapse/expand button for desktop */}
-      {!mobile && (
+      {!mobile && setCollapsed && (
         <button
           className="hidden lg:flex items-center justify-center p-2 rounded-full border-2 border-[#39FF14] bg-[#111] hover:bg-[#222] transition-colors duration-200 text-white focus:outline-none shadow-lg"
           style={{ position: 'absolute', top: '50%', right: '-18px', transform: 'translateY(-50%)', zIndex: 1000 }}
-          onClick={() => setCollapsed((c) => !c)}
+          onClick={() => setCollapsed(!collapsed)}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >

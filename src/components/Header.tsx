@@ -86,7 +86,8 @@ export default function Header({
                 placeholder="Search collections..."
                 value={searchQuery} 
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 border-2 border-black rounded-full w-full bg-white text-black focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="pl-10 pr-4 py-2 border-2 rounded-full w-full bg-black text-white placeholder-gray-400 focus:outline-none"
+                style={{ borderColor: '#39FF14' }}
               />
             </div>
           </div>
@@ -105,7 +106,8 @@ export default function Header({
               </div>
               <input
                 type="text"
-                className="w-full pl-10 pr-4 py-2 border-2 border-black rounded-full bg-white text-black"
+                className="w-full pl-10 pr-4 py-2 border-2 rounded-full bg-black text-white placeholder-gray-400 focus:outline-none"
+                style={{ borderColor: '#39FF14' }}
                 placeholder="Search collections..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
