@@ -29,33 +29,33 @@ const navigationCategories = {
 export default function Sidebar({ mobile = false }: { mobile?: boolean } = {}) {
   const content = (
     <>
-      <div className="sticky top-0 p-6 border-b-2 border-black" style={{ backgroundColor: '#223d94' }}>
-        <h2 className="text-xl font-bold text-yellow-300 text-left">Menu</h2>
+      <div className="sticky top-0 p-6 border-b-2" style={{ backgroundColor: '#000', borderColor: '#39FF14' }}>
+        <h2 className="text-xl font-bold text-[#39FF14] text-left">Menu</h2>
       </div>
-      <div className="flex flex-col h-[calc(100vh-5rem)] overflow-y-auto">
+      <div className="flex flex-col h-[calc(100vh-5rem)] overflow-y-auto" style={{ backgroundColor: '#000' }}>
         <nav className="flex-1 p-6">
           {Object.entries(navigationCategories).map(([category, items]) => (
             <div key={category + '-cat'} className="mb-6">
-              <h3 className="text-sm uppercase text-green-400 font-bold tracking-wider mb-3">
+              <h3 className="text-sm uppercase text-[#39FF14] font-bold tracking-wider mb-3">
                 {category.charAt(0).toUpperCase() + category.slice(1)}
               </h3>
               <div className="space-y-3 pl-1">
                 {items.map((item) => (
-                  <div key={category + '-' + item.name} className={`flex items-center gap-2 text-lg font-semibold w-full text-left ${!item.active ? 'opacity-70 cursor-default' : ''}`}>{item.icon} {item.name}</div>
+                  <div key={category + '-' + item.name} className={`flex items-center gap-2 text-lg font-semibold w-full text-left text-[#39FF14] ${!item.active ? 'opacity-70 cursor-default' : ''}`}>{item.icon} {item.name}</div>
                 ))}
               </div>
             </div>
           ))}
         </nav>
-        <div className="mt-auto p-4 border-t-2 border-black">
-          <p className="text-sm text-white text-center">© 2025 LilyPad</p>
+        <div className="mt-auto p-4 border-t-2" style={{ borderColor: '#39FF14' }}>
+          <p className="text-sm text-[#39FF14] text-center">© 2025 LilyPad</p>
         </div>
       </div>
     </>
   );
   if (mobile) return content;
   return (
-    <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:block w-64 h-screen border-r-2 border-black" style={{ backgroundColor: '#223d94' }}>
+    <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:block w-64 h-screen border-r-2" style={{ backgroundColor: '#000', borderColor: '#39FF14' }}>
       {content}
     </aside>
   );
