@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import { FaBars, FaTimes, FaSearch, FaUser } from "react-icons/fa";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 // Dummy Connect Button (UI only)
 const DummyConnectButton = () => (
@@ -92,7 +93,7 @@ export default function Header({
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <DummyConnectButton />
+            <ConnectButton />
             <span className="ml-2 flex items-center justify-center w-10 h-10 rounded-full bg-white border-2 border-black">
               <FaUser className="text-black w-6 h-6" />
             </span>
