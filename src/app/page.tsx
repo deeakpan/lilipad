@@ -109,7 +109,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row" style={{ backgroundColor: '#000', color: '#39FF14', borderColor: '#39FF14' }}>
+    <div className="min-h-screen flex flex-col lg:flex-row" style={{ backgroundColor: '#000', color: '#32CD32', borderColor: '#32CD32' }}>
       {/* Header */}
       <Header
         searchQuery={searchQuery}
@@ -155,7 +155,7 @@ export default function HomePage() {
           >
             {/* Drops Slideshow */}
             <div className="w-full mb-8 relative flex flex-col items-start px-4 lg:px-0">
-              <h2 className="text-xl font-bold" style={{ color: '#39FF14' }}>Drops</h2>
+              <h2 className="text-xl font-bold" style={{ color: '#32CD32' }}>Drops</h2>
               <p className="text-white text-sm mb-4">Latest NFT drops and releases.</p>
               {/* Drop Image Section */}
               <div className="relative w-full overflow-hidden group drop-image-section" style={{ height: '400px', maxWidth: '100%' }}>
@@ -174,24 +174,24 @@ export default function HomePage() {
                 <div className="absolute bottom-4 left-4 z-20 bg-black/80 rounded-lg px-6 py-4 flex flex-row items-center gap-10 min-w-[320px] max-w-[95vw] border-0 hidden lg:flex">
                   {/* Mint Price */}
                   <div className="flex flex-col items-start">
-                    <span className="text-xs font-bold text-[#39FF14] uppercase tracking-widest mb-1">MINT PRICE</span>
+                    <span className="text-xs font-bold text-[#32CD32] uppercase tracking-widest mb-1">MINT PRICE</span>
                     <span className="text-lg font-mono font-bold text-white">{drops[slideIndex % drops.length].floor_price} PEPU</span>
                   </div>
                   {/* Total Items */}
                   <div className="flex flex-col items-start">
-                    <span className="text-xs font-bold text-[#39FF14] uppercase tracking-widest mb-1">TOTAL ITEMS</span>
+                    <span className="text-xs font-bold text-[#32CD32] uppercase tracking-widest mb-1">TOTAL ITEMS</span>
                     <span className="text-lg font-mono font-bold text-white">{drops[slideIndex % drops.length].items}</span>
                   </div>
                   {/* Mint Starts In */}
                   <div className="flex flex-col items-start">
-                    <span className="text-xs font-bold text-[#39FF14] uppercase tracking-widest mb-1">MINT STARTS IN</span>
+                    <span className="text-xs font-bold text-[#32CD32] uppercase tracking-widest mb-1">MINT STARTS IN</span>
                     <span className="text-lg font-mono font-bold text-white">01:01:31:25</span>
                   </div>
                 </div>
                 {/* Back button */}
                 <button
                   onClick={handlePrev}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-[#39FF14] rounded-full p-3 z-30 border-2 border-[#39FF14] opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-[#39FF14] hover:text-black hidden lg:block"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-[#32CD32] rounded-full p-3 z-30 border-2 border-[#32CD32] opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-[#32CD32] hover:text-black hidden lg:block"
                   aria-label="Previous Drop"
                 >
                   <FaChevronLeft className="w-7 h-7" />
@@ -199,7 +199,7 @@ export default function HomePage() {
                 {/* Next button */}
                 <button
                   onClick={handleNext}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-[#39FF14] rounded-full p-3 z-30 border-2 border-[#39FF14] opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-[#39FF14] hover:text-black hidden lg:block"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-[#32CD32] rounded-full p-3 z-30 border-2 border-[#32CD32] opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-[#32CD32] hover:text-black hidden lg:block"
                   aria-label="Next Drop"
                 >
                   <FaChevronRight className="w-7 h-7" />
@@ -207,19 +207,19 @@ export default function HomePage() {
               </div>
               {/* Mobile drop name and details below image */}
               <div className="block lg:hidden w-full mt-4">
-                <div className="bg-black/80 rounded-lg px-4 py-4 flex flex-col gap-4 w-full" style={{ border: '2px solid #39FF14' }}>
+                <div className="bg-black/80 rounded-lg px-4 py-4 flex flex-col gap-4 w-full" style={{ border: '2px solid #32CD32' }}>
                   <h3 className="text-2xl font-extrabold text-white mb-2">{drops[slideIndex % drops.length].name}</h3>
                   <div className="flex flex-row items-center gap-6 w-full">
                     <div className="flex flex-col items-start">
-                      <span className="text-xs font-bold text-[#39FF14] uppercase tracking-widest mb-1">MINT PRICE</span>
+                      <span className="text-xs font-bold text-[#32CD32] uppercase tracking-widest mb-1">MINT PRICE</span>
                       <span className="text-lg font-mono font-bold text-white">{drops[slideIndex % drops.length].floor_price} PEPU</span>
                     </div>
                     <div className="flex flex-col items-start">
-                      <span className="text-xs font-bold text-[#39FF14] uppercase tracking-widest mb-1">TOTAL ITEMS</span>
+                      <span className="text-xs font-bold text-[#32CD32] uppercase tracking-widest mb-1">TOTAL ITEMS</span>
                       <span className="text-lg font-mono font-bold text-white">{drops[slideIndex % drops.length].items}</span>
                     </div>
                     <div className="flex flex-col items-start">
-                      <span className="text-xs font-bold text-[#39FF14] uppercase tracking-widest mb-1">MINT STARTS IN</span>
+                      <span className="text-xs font-bold text-[#32CD32] uppercase tracking-widest mb-1">MINT STARTS IN</span>
                       <span className="text-lg font-mono font-bold text-white">01:01:31:25</span>
                     </div>
                   </div>
@@ -228,7 +228,7 @@ export default function HomePage() {
             </div>
             {/* Featured Collections Horizontal Scroll */}
             <div className="w-full mb-8 px-4 lg:px-0">
-              <h2 className="text-xl font-bold" style={{ color: '#39FF14' }}>Featured Collections</h2>
+              <h2 className="text-xl font-bold" style={{ color: '#32CD32' }}>Featured Collections</h2>
               <p className="text-white text-sm mb-4">Top curated collections for this week.</p>
               <motion.div
                 className="flex gap-4 overflow-x-auto pb-2 no-scrollbar snap-x snap-mandatory w-full min-w-0"
@@ -240,8 +240,8 @@ export default function HomePage() {
                 {collections.map((col) => (
                   <motion.div
                     key={col.id}
-                    className="relative rounded-lg border-2 flex-shrink-0 w-[270px] h-[170px] snap-start" style={{ borderColor: '#39FF14', background: '#000' }}
-                    whileHover={{ scale: 1.04, boxShadow: '0 4px 24px #39FF14' }}
+                    className="relative rounded-lg border-2 flex-shrink-0 w-[270px] h-[170px] snap-start" style={{ borderColor: '#32CD32', background: '#000' }}
+                    whileHover={{ scale: 1.04, boxShadow: '0 4px 24px #32CD32' }}
                   >
                     <Image
                       src={col.image_url}
@@ -270,10 +270,10 @@ export default function HomePage() {
               <button className="px-2 py-1 text-sm rounded-t-lg bg-white text-black font-bold border-2 border-black">Mints</button>
             </div>
             {/* Collections container */}
-            <div className="shadow-lg border-2 w-full lg:max-w-4xl lg:ml-0 lg:px-6 lg:rounded-lg" style={{ backgroundColor: '#000', borderColor: '#39FF14' }}>
+            <div className="shadow-lg border-2 w-full lg:max-w-4xl lg:ml-0 lg:px-6 lg:rounded-lg" style={{ backgroundColor: '#000', borderColor: '#32CD32' }}>
               {/* Title Container */}
-              <div className="pt-6 pb-4 border-b-2 rounded-t-lg px-4 lg:px-6" style={{ backgroundColor: '#000', borderColor: '#39FF14' }}>
-                <h2 className="text-2xl font-bold" style={{ color: '#39FF14' }}>Collections</h2>
+              <div className="pt-6 pb-4 border-b-2 rounded-t-lg px-4 lg:px-6" style={{ backgroundColor: '#000', borderColor: '#32CD32' }}>
+                <h2 className="text-2xl font-bold" style={{ color: '#32CD32' }}>Collections</h2>
               </div>
               {/* Card List Container */}
               <div className="flex flex-col gap-4 py-6 rounded-b-lg items-start px-2 sm:px-4 md:px-6 lg:px-6" style={{ backgroundColor: '#000' }}>
@@ -301,7 +301,7 @@ export default function HomePage() {
                 ))}
                 {collections.length > 5 && !showAllCollections && (
                   <span
-                    className="mt-2 cursor-pointer text-[#39FF14] font-semibold hover:underline text-center w-full block"
+                    className="mt-2 cursor-pointer text-[#32CD32] font-semibold hover:underline text-center w-full block"
                     onClick={() => setShowAllCollections(true)}
                   >
                     See more
@@ -309,7 +309,7 @@ export default function HomePage() {
                 )}
                 {collections.length > 5 && showAllCollections && (
                   <span
-                    className="mt-2 cursor-pointer text-[#39FF14] font-semibold hover:underline text-center w-full block"
+                    className="mt-2 cursor-pointer text-[#32CD32] font-semibold hover:underline text-center w-full block"
                     onClick={() => setShowAllCollections(false)}
                   >
                     See less

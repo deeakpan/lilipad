@@ -38,7 +38,7 @@ export default function Header({
   setSearchVisible: (v: boolean) => void;
 }) {
   return (
-    <div className="fixed top-0 left-0 right-0 w-full p-4 shadow-lg z-40 border-b-2" style={{ backgroundColor: '#000', borderColor: '#39FF14' }}>
+    <div className="fixed top-0 left-0 right-0 w-full p-4 shadow-lg z-40 border-b-2" style={{ backgroundColor: '#000', borderColor: '#32CD32' }}>
       <div className="max-w-7xl mx-auto">
         {/* Mobile Header */}
         <div className="lg:hidden flex justify-between items-center">
@@ -87,7 +87,7 @@ export default function Header({
                 value={searchQuery} 
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2 border-2 rounded-full w-full bg-black text-white placeholder-gray-400 focus:outline-none"
-                style={{ borderColor: '#39FF14' }}
+                style={{ borderColor: '#32CD32' }}
               />
             </div>
           </div>
@@ -107,7 +107,7 @@ export default function Header({
               <input
                 type="text"
                 className="w-full pl-10 pr-4 py-2 border-2 rounded-full bg-black text-white placeholder-gray-400 focus:outline-none"
-                style={{ borderColor: '#39FF14' }}
+                style={{ borderColor: '#32CD32' }}
                 placeholder="Search collections..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}

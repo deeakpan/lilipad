@@ -3,8 +3,8 @@
 :root {
   --background: #000000;
   --foreground: #ffffff;
-  --border: #39FF14; /* bright green border */
-  --accent: #39FF14; /* bright green accent */
+  --border: #32CD32; /* less bright green border */
+  --accent: #32CD32; /* less bright green accent */
 }
 
 @theme inline {
@@ -20,8 +20,8 @@
   :root {
     --background: #000000;
     --foreground: #ffffff;
-    --border: #39FF14;
-    --accent: #39FF14;
+    --border: #32CD32;
+    --accent: #32CD32;
   }
 }
 
