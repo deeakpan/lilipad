@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
-import { FaBars, FaTimes, FaSearch, FaUser } from "react-icons/fa";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { FaBars, FaTimes, FaSearch, FaUser, FaWallet } from "react-icons/fa";
+import { ConnectButton as ConnectButtonBase } from "@rainbow-me/rainbowkit";
 
 // Dummy Connect Button (UI only)
 const DummyConnectButton = () => (
@@ -60,11 +60,30 @@ export default function Header({
               <h1 className="text-lg font-bold tracking-wide text-yellow-300">LilyPad</h1>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 w-1/2 justify-end">
             <button onClick={() => setSearchVisible(!searchVisible)} className="text-white">
               <FaSearch className="w-5 h-5" />
             </button>
-            <DummyMobileConnectButton />
+            <div className="w-full">
+              <ConnectButtonBase.Custom>
+                {({ account, chain, openConnectModal, openAccountModal, openChainModal, mounted }: any) => (
+                  <button
+                    onClick={
+                      !mounted
+                        ? undefined
+                        : !account || !chain
+                        ? openConnectModal
+                        : openAccountModal
+                    }
+                    type="button"
+                    className="flex items-center gap-2 w-full px-3 py-2 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors text-sm justify-center"
+                  >
+                    <FaWallet className="w-5 h-5 mr-1" />
+                    {account ? account.displayName : 'Connect'}
+                  </button>
+                )}
+              </ConnectButtonBase.Custom>
+            </div>
           </div>
         </div>
         {/* Desktop Header */}
@@ -93,7 +112,24 @@ export default function Header({
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <ConnectButton />
+            <ConnectButtonBase.Custom>
+              {({ account, chain, openConnectModal, openAccountModal, openChainModal, mounted }: any) => (
+                <button
+                  onClick={
+                    !mounted
+                      ? undefined
+                      : !account || !chain
+                      ? openConnectModal
+                      : openAccountModal
+                  }
+                  type="button"
+                  className="flex items-center gap-2 px-5 py-2 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors w-full sm:w-auto text-base sm:text-base text-sm"
+                >
+                  <FaWallet className="w-5 h-5 mr-1" />
+                  {account ? account.displayName : 'Connect Wallet'}
+                </button>
+              )}
+            </ConnectButtonBase.Custom>
             <span className="ml-2 flex items-center justify-center w-10 h-10 rounded-full bg-white border-2 border-black">
               <FaUser className="text-black w-6 h-6" />
             </span>
