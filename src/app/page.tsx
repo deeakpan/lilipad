@@ -14,7 +14,7 @@ import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 
 const collections = [
-  { id: 1, name: "Frogs United", image_url: "/globe.svg", items: 120, minters: 45, floor_price: 2.5, volume: 1200 },
+  { id: 1, name: "Frogs Unite", image_url: "/globe.svg", items: 120, minters: 45, floor_price: 2.5, volume: 1200 },
   { id: 2, name: "Lily Legends", image_url: "/window.svg", items: 80, minters: 30, floor_price: 1.2, volume: 800 },
   { id: 3, name: "Pad Masters", image_url: "/lily-removebg-preview.png", items: 200, minters: 60, floor_price: 3.1, volume: 2500 },
   { id: 4, name: "Springfield", image_url: "/photo_2025-07-06_19-24-17.jpg", items: 99, minters: 40, floor_price: 4.2, volume: 1500 },
