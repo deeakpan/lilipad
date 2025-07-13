@@ -45,6 +45,8 @@ export default function LaunchPage() {
   // Only one upload: metadata file (.json or .zip)
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
   const [submitting, setSubmitting] = useState(false);
+  const [nftPreviews, setNftPreviews] = useState<Array<{ imageUrl: string; metadata: any }> | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
   if (!mounted) return null;
@@ -88,6 +90,7 @@ export default function LaunchPage() {
     setMetaFile(file);
     setTotalSupply(null);
     setZipError(null);
+    setNftPreviews(null);
     if (file) {
       if (!file.name.endsWith('.zip')) {
         setZipError('Only .zip files are allowed.');
@@ -97,12 +100,28 @@ export default function LaunchPage() {
       try {
         const jszip = new JSZip();
         const zip = await jszip.loadAsync(file);
-        // Count .json files in the zip (each is an NFT)
-        let count = 0;
+        // Collect .json and image files
+        const jsonFiles: { name: string; file: JSZip.JSZipObject }[] = [];
+        const imageFiles: { name: string; file: JSZip.JSZipObject }[] = [];
         zip.forEach((relativePath: string, zipEntry: JSZip.JSZipObject) => {
-          if (zipEntry.name.endsWith('.json')) count++;
+          if (zipEntry.name.endsWith('.json')) jsonFiles.push({ name: zipEntry.name, file: zipEntry });
+          if (zipEntry.name.match(/\.(png|jpg|jpeg|gif|webp)$/i)) imageFiles.push({ name: zipEntry.name, file: zipEntry });
         });
-        setTotalSupply(count);
+        setTotalSupply(jsonFiles.length);
+        // Sort both arrays alphabetically for matching
+        jsonFiles.sort((a, b) => a.name.localeCompare(b.name));
+        imageFiles.sort((a, b) => a.name.localeCompare(b.name));
+        // Match by order
+        const previews: Array<{ imageUrl: string; metadata: any }> = [];
+        for (let i = 0; i < Math.min(jsonFiles.length, imageFiles.length, 8); i++) { // show up to 8 previews
+          const metaStr = await jsonFiles[i].file.async('string');
+          let metadata: any = {};
+          try { metadata = JSON.parse(metaStr); } catch {}
+          const imgBlob = await imageFiles[i].file.async('blob');
+          const imageUrl = URL.createObjectURL(imgBlob);
+          previews.push({ imageUrl, metadata });
+        }
+        setNftPreviews(previews);
       } catch (err) {
         setZipError('Failed to parse zip file.');
       }
@@ -218,22 +237,101 @@ export default function LaunchPage() {
           >
             <h2 className="text-3xl font-extrabold mb-4 text-[#32CD32]">Upload Collection Metadata</h2>
             <div
-              className="w-full flex flex-col items-center justify-center gap-4 border-4 border-dashed rounded-2xl p-10 bg-[#111] hover:bg-[#181818] transition-colors relative"
+              className="w-full flex flex-col items-center justify-center gap-4 border-4 border-dashed rounded-2xl p-10 bg-[#111] hover:bg-[#181818] transition-colors relative cursor-pointer"
               style={{ borderColor: '#32CD32', minHeight: 220 }}
+              onClick={() => {
+                if (!zipLoading) document.getElementById('meta-upload-input')?.click();
+              }}
+              tabIndex={0}
+              role="button"
+              onKeyDown={e => {
+                if ((e.key === 'Enter' || e.key === ' ') && !zipLoading) {
+                  document.getElementById('meta-upload-input')?.click();
+                }
+              }}
             >
               <FaUpload className="w-16 h-16 text-yellow-400 mb-2" />
               <label className="text-green-200 mb-1 text-lg font-semibold">Select your collection .zip file</label>
               <input
+                id="meta-upload-input"
                 type="file"
                 accept=".zip,application/zip"
-                className="w-full text-white text-lg file:cursor-pointer file:mr-4"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                style={{ zIndex: 2 }}
                 onChange={handleMetaFile}
+                tabIndex={-1}
+                aria-label="Upload collection zip file"
               />
               {metaFile && <span className="text-xs text-green-300 mt-1">{metaFile.name}</span>}
               {zipLoading && <span className="text-yellow-300 mt-2">Parsing zip...</span>}
               {zipError && <span className="text-red-400 mt-2">{zipError}</span>}
-              {totalSupply !== null && !zipLoading && !zipError && (
-                <span className="text-green-300 mt-2 text-lg font-bold">Total Supply: {totalSupply}</span>
+              {!showPreview ? (
+                <>
+                  {totalSupply !== null && !zipLoading && !zipError && (
+                    <span className="text-green-300 mt-2 text-lg font-bold">Total Supply: {totalSupply}</span>
+                  )}
+                  {metaFile && !zipLoading && !zipError && (totalSupply ?? 0) > 0 && (
+                    <button
+                      type="button"
+                      className="mt-4 px-8 py-3 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors text-lg"
+                      onClick={async e => {
+                        e.stopPropagation();
+                        setShowPreview(true);
+                        if (!nftPreviews) {
+                          setZipLoading(true);
+                          try {
+                            const jszip = new JSZip();
+                            const zip = await jszip.loadAsync(metaFile);
+                            const jsonFiles: { name: string; file: JSZip.JSZipObject }[] = [];
+                            const imageFiles: { name: string; file: JSZip.JSZipObject }[] = [];
+                            zip.forEach((relativePath: string, zipEntry: JSZip.JSZipObject) => {
+                              if (zipEntry.name.endsWith('.json')) jsonFiles.push({ name: zipEntry.name, file: zipEntry });
+                              if (zipEntry.name.match(/\.(png|jpg|jpeg|gif|webp)$/i)) imageFiles.push({ name: zipEntry.name, file: zipEntry });
+                            });
+                            jsonFiles.sort((a, b) => a.name.localeCompare(b.name));
+                            imageFiles.sort((a, b) => a.name.localeCompare(b.name));
+                            const previews: Array<{ imageUrl: string; metadata: any }> = [];
+                            for (let i = 0; i < Math.min(jsonFiles.length, imageFiles.length, 8); i++) {
+                              const metaStr = await jsonFiles[i].file.async('string');
+                              let metadata: any = {};
+                              try { metadata = JSON.parse(metaStr); } catch {}
+                              const imgBlob = await imageFiles[i].file.async('blob');
+                              const imageUrl = URL.createObjectURL(imgBlob);
+                              previews.push({ imageUrl, metadata });
+                            }
+                            setNftPreviews(previews);
+                          } catch (err) {
+                            setZipError('Failed to parse zip file.');
+                          }
+                          setZipLoading(false);
+                        }
+                      }}
+                    >
+                      Preview
+                    </button>
+                  )}
+                </>
+              ) : (
+                nftPreviews && nftPreviews.length > 0 && (
+                  <div className="mt-6 w-full">
+                    <button
+                      type="button"
+                      className="mb-4 px-8 py-3 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors text-lg"
+                      onClick={() => setShowPreview(false)}
+                    >
+                      Back
+                    </button>
+                    <h4 className="text-yellow-300 font-bold mb-2">NFT Preview (first {nftPreviews.length})</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      {nftPreviews.map((nft, idx) => (
+                        <div key={idx} className="flex flex-col items-center bg-[#222] rounded-xl p-4 border border-[#32CD32]">
+                          <img src={nft.imageUrl} alt="NFT preview" className="w-32 h-32 object-contain rounded mb-2 border border-yellow-300" />
+                          <pre className="text-xs text-green-200 bg-[#181818] rounded p-2 w-full overflow-x-auto max-h-32">{JSON.stringify(nft.metadata, null, 2)}</pre>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
               )}
             </div>
             {/* Preview of entered details */}
