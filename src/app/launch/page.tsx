@@ -1,0 +1,274 @@
+'use client';
+import { useAccount } from 'wagmi';
+import { useState, useEffect } from 'react';
+import { FaWallet } from 'react-icons/fa';
+import { FaUpload } from 'react-icons/fa';
+// If you haven't already, run: npm install jszip
+import JSZip from 'jszip';
+import { ConnectButton as ConnectButtonBase } from '@rainbow-me/rainbowkit';
+import Link from 'next/link';
+
+function validateUrl(url: string) {
+  try {
+    const u = new URL(url);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function validateTwitter(twitter: string) {
+  // Accepts @handle or full URL
+  if (!twitter) return false;
+  if (twitter.startsWith('@')) return twitter.length > 1;
+  if (/^https?:\/\/(www\.)?twitter\.com\/[A-Za-z0-9_]{1,15}$/.test(twitter)) return true;
+  return false;
+}
+
+export default function LaunchPage() {
+  const { isConnected } = useAccount();
+  const [mounted, setMounted] = useState(false);
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState({
+    name: '',
+    vanity: '',
+    description: '',
+    royalty: '',
+    website: '',
+    twitter: '',
+    banner: null as File | null,
+  });
+  const [metaFile, setMetaFile] = useState<File | null>(null);
+  const [zipLoading, setZipLoading] = useState(false);
+  const [totalSupply, setTotalSupply] = useState<number | null>(null);
+  const [zipError, setZipError] = useState<string | null>(null);
+  // Only one upload: metadata file (.json or .zip)
+  const [errors, setErrors] = useState<{ [k: string]: string }>({});
+  const [submitting, setSubmitting] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  if (!mounted) return null;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    if (type === 'file') {
+      const file = (e.target as HTMLInputElement).files?.[0] || null;
+      setForm(f => ({ ...f, [name]: file }));
+    } else {
+      setForm(f => ({ ...f, [name]: value }));
+    }
+  };
+
+  const validateStep1 = () => {
+    const errs: { [k: string]: string } = {};
+    if (!form.name.trim()) errs.name = 'Name is required.';
+    if (!form.vanity.trim()) errs.vanity = 'Vanity URL is required.';
+    if (!form.description.trim()) errs.description = 'Description is required.';
+    if (!form.royalty.trim()) errs.royalty = 'Royalty is required.';
+    else if (isNaN(Number(form.royalty)) || Number(form.royalty) < 0 || Number(form.royalty) > 50) errs.royalty = 'Royalty must be 0-50.';
+    if (!form.banner) errs.banner = 'Banner is required.';
+    if (!form.website.trim()) errs.website = 'Website is required.';
+    else if (!validateUrl(form.website.trim())) errs.website = 'Enter a valid website URL.';
+    if (!form.twitter.trim()) errs.twitter = 'Twitter is required.';
+    else if (!validateTwitter(form.twitter.trim())) errs.twitter = 'Enter a valid Twitter handle or URL.';
+    return errs;
+  };
+
+  const handleStep1Submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const errs = validateStep1();
+    setErrors(errs);
+    if (Object.keys(errs).length === 0) {
+      setStep(2);
+    }
+  };
+
+  const handleMetaFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setMetaFile(file);
+    setTotalSupply(null);
+    setZipError(null);
+    if (file) {
+      if (!file.name.endsWith('.zip')) {
+        setZipError('Only .zip files are allowed.');
+        return;
+      }
+      setZipLoading(true);
+      try {
+        const jszip = new JSZip();
+        const zip = await jszip.loadAsync(file);
+        // Count .json files in the zip (each is an NFT)
+        let count = 0;
+        zip.forEach((relativePath: string, zipEntry: JSZip.JSZipObject) => {
+          if (zipEntry.name.endsWith('.json')) count++;
+        });
+        setTotalSupply(count);
+      } catch (err) {
+        setZipError('Failed to parse zip file.');
+      }
+      setZipLoading(false);
+    }
+  };
+
+  const handleUpload = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!metaFile) return;
+    setSubmitting(true);
+    // TODO: Implement upload logic
+    setTimeout(() => {
+      alert('Collection uploaded!');
+      setSubmitting(false);
+    }, 1200);
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#000', color: '#32CD32', borderColor: '#32CD32' }}>
+      {/* Minimal Header */}
+      <div className="w-full p-4 shadow-lg z-40 border-b-2 flex items-center justify-between" style={{ backgroundColor: '#000', borderColor: '#32CD32' }}>
+        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <img 
+            src="/lily-removebg-preview.png" 
+            alt="LiliPad Logo" 
+            className="rounded-full object-cover w-9 h-9"
+          />
+          <h1 className="text-lg font-bold tracking-wide text-yellow-300">LiliPad</h1>
+        </Link>
+        <ConnectButtonBase.Custom>
+          {({ account, chain, openConnectModal, openAccountModal, openChainModal, mounted }: any) => (
+            <button
+              onClick={
+                !mounted
+                  ? undefined
+                  : !account || !chain
+                  ? openConnectModal
+                  : openAccountModal
+              }
+              type="button"
+              className="flex items-center gap-2 px-3 py-1 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors text-sm"
+            >
+              <FaWallet className="w-5 h-5" />
+              <span className="font-semibold text-sm">{account ? 'connected' : 'connect'}</span>
+            </button>
+          )}
+        </ConnectButtonBase.Custom>
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-8 py-12 w-full">
+        {!isConnected ? (
+          <h1 className="text-2xl font-bold mb-4 text-[#32CD32] text-center w-full">Connect your wallet to access this page</h1>
+        ) : step === 1 ? (
+          <form
+            className="w-full max-w-2xl mx-auto bg-black p-0 sm:p-8 flex flex-col gap-8"
+            onSubmit={handleStep1Submit}
+            noValidate
+          >
+            <h2 className="text-4xl font-extrabold mb-4 text-[#32CD32]">Collection Info</h2>
+            <p className="text-green-200 text-base mb-2">Fill in all fields to continue.</p>
+            <div>
+              <label className="block text-white font-semibold mb-2 text-lg">Name</label>
+              <input name="name" type="text" className="w-full px-6 py-4 rounded-xl border-2 border-[#32CD32] bg-black text-white focus:outline-none focus:border-yellow-300 text-lg" placeholder="Collection name" value={form.name} onChange={handleChange} />
+              {errors.name && <span className="text-red-400 text-sm mt-1">{errors.name}</span>}
+            </div>
+            <div>
+              <label className="block text-white font-semibold mb-2 text-lg">Vanity URL</label>
+              <input name="vanity" type="text" className="w-full px-6 py-4 rounded-xl border-2 border-[#32CD32] bg-black text-white focus:outline-none focus:border-yellow-300 text-lg" placeholder="your-collection-url" value={form.vanity} onChange={handleChange} />
+              {errors.vanity && <span className="text-red-400 text-sm mt-1">{errors.vanity}</span>}
+            </div>
+            <div>
+              <label className="block text-white font-semibold mb-2 text-lg">Description</label>
+              <textarea name="description" className="w-full px-6 py-4 rounded-xl border-2 border-[#32CD32] bg-black text-white focus:outline-none focus:border-yellow-300 text-lg" placeholder="Describe your collection" rows={4} value={form.description} onChange={handleChange} />
+              {errors.description && <span className="text-red-400 text-sm mt-1">{errors.description}</span>}
+            </div>
+            <div>
+              <label className="block text-white font-semibold mb-2 text-lg">Creator Royalty (max 50%)</label>
+              <input
+                name="royalty"
+                type="number"
+                min="0"
+                max="50"
+                step="0.01"
+                className="w-full px-6 py-4 rounded-xl border-2 border-[#32CD32] bg-black text-white focus:outline-none focus:border-yellow-300 text-lg"
+                placeholder="e.g. 5"
+                value={form.royalty}
+                onChange={handleChange}
+              />
+              {errors.royalty && <span className="text-red-400 text-sm mt-1">{errors.royalty}</span>}
+            </div>
+            <div>
+              <label className="block text-white font-semibold mb-2 text-lg">Banner</label>
+              <input name="banner" type="file" accept="image/*" className="w-full text-white text-lg" onChange={handleChange} />
+              {errors.banner && <span className="text-red-400 text-sm mt-1">{errors.banner}</span>}
+            </div>
+            <div>
+              <label className="block text-white font-semibold mb-2 text-lg">Website</label>
+              <input name="website" type="url" className="w-full px-6 py-4 rounded-xl border-2 border-[#32CD32] bg-black text-white focus:outline-none focus:border-yellow-300 text-lg" placeholder="https://yourwebsite.com" value={form.website} onChange={handleChange} />
+              {errors.website && <span className="text-red-400 text-sm mt-1">{errors.website}</span>}
+            </div>
+            <div>
+              <label className="block text-white font-semibold mb-2 text-lg">Twitter</label>
+              <input name="twitter" type="text" className="w-full px-6 py-4 rounded-xl border-2 border-[#32CD32] bg-black text-white focus:outline-none focus:border-yellow-300 text-lg" placeholder="@yourtwitter or https://twitter.com/yourhandle" value={form.twitter} onChange={handleChange} />
+              {errors.twitter && <span className="text-red-400 text-sm mt-1">{errors.twitter}</span>}
+            </div>
+            <button type="submit" className="mt-8 px-10 py-4 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors text-2xl self-center disabled:opacity-50" disabled={submitting}>Next</button>
+            <p className="text-green-200 text-base mb-2 text-center">You don’t have a collection? Start by generating and exporting your collection metadata <a href="https://lilipad-nft-export.vercel.app" target="_blank" rel="noopener noreferrer" className="underline text-yellow-300 hover:text-yellow-400">here</a></p>
+          </form>
+        ) : (
+          <form
+            className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center gap-8 bg-black p-8 rounded-2xl border-2 border-[#32CD32]"
+            onSubmit={e => { e.preventDefault(); /* Next step logic here */ }}
+          >
+            <h2 className="text-3xl font-extrabold mb-4 text-[#32CD32]">Upload Collection Metadata</h2>
+            <div
+              className="w-full flex flex-col items-center justify-center gap-4 border-4 border-dashed rounded-2xl p-10 bg-[#111] hover:bg-[#181818] transition-colors relative"
+              style={{ borderColor: '#32CD32', minHeight: 220 }}
+            >
+              <FaUpload className="w-16 h-16 text-yellow-400 mb-2" />
+              <label className="text-green-200 mb-1 text-lg font-semibold">Select your collection .zip file</label>
+              <input
+                type="file"
+                accept=".zip,application/zip"
+                className="w-full text-white text-lg file:cursor-pointer file:mr-4"
+                onChange={handleMetaFile}
+              />
+              {metaFile && <span className="text-xs text-green-300 mt-1">{metaFile.name}</span>}
+              {zipLoading && <span className="text-yellow-300 mt-2">Parsing zip...</span>}
+              {zipError && <span className="text-red-400 mt-2">{zipError}</span>}
+              {totalSupply !== null && !zipLoading && !zipError && (
+                <span className="text-green-300 mt-2 text-lg font-bold">Total Supply: {totalSupply}</span>
+              )}
+            </div>
+            {/* Preview of entered details */}
+            <div className="w-full bg-[#181818] rounded-xl p-6 mt-4 border border-[#32CD32]">
+              <h3 className="text-xl font-bold text-yellow-300 mb-2">Collection Preview</h3>
+              <div className="text-white text-base mb-1"><span className="font-semibold">Name:</span> {form.name}</div>
+              <div className="text-white text-base mb-1"><span className="font-semibold">Vanity URL:</span> {form.vanity}</div>
+              <div className="text-white text-base mb-1"><span className="font-semibold">Description:</span> {form.description}</div>
+              <div className="text-white text-base mb-1"><span className="font-semibold">Royalty:</span> {form.royalty}%</div>
+              <div className="text-white text-base mb-1"><span className="font-semibold">Website:</span> {form.website}</div>
+              <div className="text-white text-base mb-1"><span className="font-semibold">Twitter:</span> {form.twitter}</div>
+              {totalSupply !== null && !zipLoading && !zipError && (
+                <div className="text-green-300 text-base mt-2"><span className="font-semibold">Total Supply:</span> {totalSupply}</div>
+              )}
+            </div>
+            <div className="flex flex-row gap-4 mt-6">
+              <button
+                type="button"
+                className="px-8 py-3 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors text-lg"
+                onClick={() => setStep(1)}
+                disabled={submitting}
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                className="px-8 py-3 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors text-lg disabled:opacity-50"
+                disabled={!metaFile || zipLoading || !!zipError}
+              >
+                Next
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+} 

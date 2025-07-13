@@ -11,7 +11,7 @@ const navigationCategories = {
     { name: "Rankings", icon: <FaAward className="w-5 h-5" />, active: false },
   ],
   create: [
-    { name: "Create Collection", icon: <FaPlusCircle className="w-5 h-5" />, active: true },
+    { name: "Create Collection", icon: <FaPlusCircle className="w-5 h-5" />, active: false },
     { name: "Create NFT", icon: <FaPlusCircle className="w-5 h-5" />, active: false },
     { name: "My Collections", icon: <FaLayerGroup className="w-5 h-5" />, active: false },
   ],
@@ -59,11 +59,13 @@ export default function Sidebar({ mobile = false, collapsed = false, setCollapse
               <div className="space-y-3 pl-1">
                 {items.map((item) => (
                   item.name === "Create Collection" ? (
-                    <Link key={category + '-' + item.name} href="/create-collection" passHref legacyBehavior>
-                      <a className={`flex items-center gap-2 text-lg font-semibold w-full text-left text-white transition-all duration-300 ${!item.active ? 'opacity-70 cursor-default' : ''}`}>
-                        {React.cloneElement(item.icon, { className: collapsed ? 'w-7 h-7' : 'w-5 h-5' })}
-                        {!collapsed && <span>{item.name}</span>}
-                      </a>
+                    <Link 
+                      key={category + '-' + item.name} 
+                      href="/create" 
+                      className={`flex items-center gap-2 text-lg font-semibold w-full text-left text-white transition-all duration-300 cursor-default`}
+                    >
+                      {React.cloneElement(item.icon, { className: collapsed ? 'w-7 h-7' : 'w-5 h-5' })}
+                      {!collapsed && <span>{item.name}</span>}
                     </Link>
                   ) : (
                     <div key={category + '-' + item.name} className={`flex items-center gap-2 text-lg font-semibold w-full text-left text-white transition-all duration-300 ${!item.active ? 'opacity-70 cursor-default' : ''}`}>

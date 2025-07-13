@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.8",
+    "@types/jszip": "^3.4.0",
     "framer-motion": "^12.23.0",
+    "jszip": "^3.10.1",
     "next": "15.3.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

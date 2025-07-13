@@ -1,11 +1,35 @@
 'use client';
 
 import { WagmiProvider, http } from 'wagmi';
-import { baseSepolia } from 'wagmi/chains';
+import { createConfig } from 'wagmi';
 import { RainbowKitProvider, getDefaultConfig } from '@rainbow-me/rainbowkit';
 import '@rainbow-me/rainbowkit/styles.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
+
+const pepuTestnet = {
+  id: 97740,
+  name: 'PEPU Testnet',
+  nativeCurrency: {
+    name: 'PEPU',
+    symbol: 'PEPU',
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://rpc-pepu-v2-testnet-vn4qxxp9og.t.conduit.xyz'],
+    },
+    public: {
+      http: ['https://rpc-pepu-v2-testnet-vn4qxxp9og.t.conduit.xyz'],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'PEPU Explorer',
+      url: 'https://explorer-pepu-v2-testnet-vn4qxxp9og.t.conduit.xyz',
+    },
+  },
+} as const;
 
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
 
@@ -14,11 +38,11 @@ if (!projectId) {
 }
 
 const config = getDefaultConfig({
-  appName: 'LilyPad',
+  appName: 'LiliPad',
   projectId,
-  chains: [baseSepolia],
+  chains: [pepuTestnet],
   transports: {
-    [baseSepolia.id]: http(),
+    [pepuTestnet.id]: http(),
   },
 });
 

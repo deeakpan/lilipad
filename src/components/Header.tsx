@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import { FaBars, FaTimes, FaSearch, FaUser, FaWallet } from "react-icons/fa";
 import { ConnectButton as ConnectButtonBase } from "@rainbow-me/rainbowkit";
+import { useState, useEffect } from "react";
 
 // Dummy Connect Button (UI only)
 const DummyConnectButton = () => (
@@ -38,6 +39,12 @@ export default function Header({
   searchVisible: boolean;
   setSearchVisible: (v: boolean) => void;
 }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <div className="fixed top-0 left-0 right-0 w-full p-4 shadow-lg z-40 border-b-2" style={{ backgroundColor: '#000', borderColor: '#32CD32' }}>
       <div className="max-w-7xl mx-auto">
@@ -54,36 +61,41 @@ export default function Header({
             <div className="flex items-center gap-2">
               <img 
                 src="/lily-removebg-preview.png" 
-                alt="LilyPad Logo" 
+                alt="LiliPad Logo" 
                 className="rounded-full object-cover w-9 h-9"
               />
-              <h1 className="text-lg font-bold tracking-wide text-yellow-300">LilyPad</h1>
+              <h1 className="text-lg font-bold tracking-wide text-yellow-300">LiliPad</h1>
             </div>
           </div>
           <div className="flex items-center space-x-3 w-1/2 justify-end">
             <button onClick={() => setSearchVisible(!searchVisible)} className="text-white">
               <FaSearch className="w-5 h-5" />
             </button>
-            <div className="w-full">
-              <ConnectButtonBase.Custom>
-                {({ account, chain, openConnectModal, openAccountModal, openChainModal, mounted }: any) => (
-                  <button
-                    onClick={
-                      !mounted
-                        ? undefined
-                        : !account || !chain
-                        ? openConnectModal
-                        : openAccountModal
-                    }
-                    type="button"
-                    className="flex items-center gap-2 w-full px-3 py-2 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors text-sm justify-center"
-                  >
-                    <FaWallet className="w-5 h-5 mr-1" />
-                    {account ? account.displayName : 'Connect'}
-                  </button>
-                )}
-              </ConnectButtonBase.Custom>
-            </div>
+            {mounted && (
+              <div className="w-full">
+                <ConnectButtonBase.Custom>
+                  {({ account, chain, openConnectModal, openAccountModal, openChainModal, mounted }: any) => (
+                    <button
+                      onClick={
+                        !mounted
+                          ? undefined
+                          : !account || !chain
+                          ? openConnectModal
+                          : openAccountModal
+                      }
+                      type="button"
+                      className="flex items-center justify-center gap-2 w-auto px-2 py-1 sm:px-5 sm:py-2 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors text-sm sm:text-base sm:w-auto"
+                    >
+                      <FaWallet className="w-5 h-5 mr-1" />
+                      <span className="block sm:hidden font-semibold text-sm">
+                        {account ? 'connected' : 'connect'}
+                      </span>
+                      <span className="hidden sm:block">{account ? account.displayName : 'Connect Wallet'}</span>
+                    </button>
+                  )}
+                </ConnectButtonBase.Custom>
+              </div>
+            )}
           </div>
         </div>
         {/* Desktop Header */}
@@ -91,10 +103,10 @@ export default function Header({
           <div className="flex items-center gap-2">
             <img 
               src="/lily-removebg-preview.png" 
-              alt="LilyPad Logo" 
+              alt="LiliPad Logo" 
               className="w-10 h-10 rounded-full object-cover"
             />
-            <h1 className="text-xl font-bold tracking-wide text-yellow-300">LilyPad</h1>
+            <h1 className="text-xl font-bold tracking-wide text-yellow-300">LiliPad</h1>
           </div>
           <div className="flex-1 flex justify-center">
             <div className="relative w-full max-w-md">
@@ -112,24 +124,26 @@ export default function Header({
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <ConnectButtonBase.Custom>
-              {({ account, chain, openConnectModal, openAccountModal, openChainModal, mounted }: any) => (
-                <button
-                  onClick={
-                    !mounted
-                      ? undefined
-                      : !account || !chain
-                      ? openConnectModal
-                      : openAccountModal
-                  }
-                  type="button"
-                  className="flex items-center gap-2 px-5 py-2 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors w-full sm:w-auto text-base sm:text-base text-sm"
-                >
-                  <FaWallet className="w-5 h-5 mr-1" />
-                  {account ? account.displayName : 'Connect Wallet'}
-                </button>
-              )}
-            </ConnectButtonBase.Custom>
+            {mounted && (
+              <ConnectButtonBase.Custom>
+                {({ account, chain, openConnectModal, openAccountModal, openChainModal, mounted }: any) => (
+                  <button
+                    onClick={
+                      !mounted
+                        ? undefined
+                        : !account || !chain
+                        ? openConnectModal
+                        : openAccountModal
+                    }
+                    type="button"
+                    className="flex items-center gap-2 px-5 py-2 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors w-full sm:w-auto text-base sm:text-base text-sm"
+                  >
+                    <FaWallet className="w-5 h-5 mr-1" />
+                    {account ? account.displayName : 'Connect Wallet'}
+                  </button>
+                )}
+              </ConnectButtonBase.Custom>
+            )}
             <span className="ml-2 flex items-center justify-center w-10 h-10 rounded-full bg-white border-2 border-black">
               <FaUser className="text-black w-6 h-6" />
             </span>
