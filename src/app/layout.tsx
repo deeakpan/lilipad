@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LilyPad",
+  title: "LiliPad",
   description: "LilyPad NFT Marketplace",
 };
 
@@ -27,7 +27,7 @@ export default function RootLayout({
     <html lang="en" className="bg-blue-500">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Web3Provider>
-          {children}
+        {children}
         </Web3Provider>
       </body>
     </html>

@@ -64,8 +64,8 @@ export default function Sidebar({ mobile = false, collapsed = false, setCollapse
                       href="/create" 
                       className={`flex items-center gap-2 text-lg font-semibold w-full text-left text-white transition-all duration-300 cursor-default`}
                     >
-                      {React.cloneElement(item.icon, { className: collapsed ? 'w-7 h-7' : 'w-5 h-5' })}
-                      {!collapsed && <span>{item.name}</span>}
+                        {React.cloneElement(item.icon, { className: collapsed ? 'w-7 h-7' : 'w-5 h-5' })}
+                        {!collapsed && <span>{item.name}</span>}
                     </Link>
                   ) : (
                     <div key={category + '-' + item.name} className={`flex items-center gap-2 text-lg font-semibold w-full text-left text-white transition-all duration-300 ${!item.active ? 'opacity-70 cursor-default' : ''}`}>

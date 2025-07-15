@@ -25,6 +25,11 @@ function validateTwitter(twitter: string) {
   return false;
 }
 
+function validateVanity(vanity: string) {
+  // Only allow lowercase letters, numbers, and hyphens, at least 4 chars
+  return /^[a-z0-9-]{4,}$/.test(vanity);
+}
+
 export default function LaunchPage() {
   const { isConnected } = useAccount();
   const [mounted, setMounted] = useState(false);
@@ -57,17 +62,66 @@ export default function LaunchPage() {
       const file = (e.target as HTMLInputElement).files?.[0] || null;
       setForm(f => ({ ...f, [name]: file }));
     } else {
-      setForm(f => ({ ...f, [name]: value }));
+      if (name === 'royalty') {
+        // Only allow numbers and up to one dot
+        let v = value.replace(/[^\d.]/g, '');
+        // Only one dot
+        v = v.replace(/(\..*)\./g, '$1');
+        // No leading zeros unless "0." pattern
+        if (v.length > 1 && v[0] === '0' && v[1] !== '.') v = v.replace(/^0+/, '');
+        // Prevent more than two decimals
+        if (v.includes('.')) v = v.replace(/(\.\d{2}).+/, '$1');
+        // Enforce max 50
+        if (v && Number(v) > 50) v = '50';
+        setForm(f => ({ ...f, [name]: v }));
+      } else if (name === 'vanity') {
+        // Only allow lowercase letters, numbers, hyphens
+        let v = value.replace(/[^a-z0-9-]/g, '');
+        // No two hyphens in a row
+        v = v.replace(/--+/g, '-');
+        // No more than 3 hyphens total
+        const hyphens = (v.match(/-/g) || []).length;
+        if (hyphens > 3) {
+          // Remove extra hyphens from the end
+          let count = 0;
+          v = v.split('').filter(char => {
+            if (char === '-') {
+              count++;
+              return count <= 3;
+            }
+            return true;
+          }).join('');
+        }
+        setForm(f => ({ ...f, [name]: v }));
+      } else {
+        setForm(f => ({ ...f, [name]: value }));
+      }
     }
+    // Live validation
+    setErrors(errs => {
+      const newErrs = { ...errs };
+      if (name === 'royalty') {
+        if (!value.trim()) newErrs.royalty = 'Royalty is required.';
+        else if (!/^(\d{1,2}(\.\d{1,2})?|50(\.0{1,2})?)$/.test(value.trim()) || Number(value) < 0 || Number(value) > 50) newErrs.royalty = 'Royalty must be a number between 0 and 50.';
+        else delete newErrs.royalty;
+      }
+      if (name === 'vanity') {
+        if (!value.trim()) newErrs.vanity = 'Vanity URL is required.';
+        else if (!validateVanity(value.trim())) newErrs.vanity = 'Vanity URL must be at least 4 characters and only contain lowercase letters, numbers, and hyphens.';
+        else delete newErrs.vanity;
+      }
+      return newErrs;
+    });
   };
 
   const validateStep1 = () => {
     const errs: { [k: string]: string } = {};
     if (!form.name.trim()) errs.name = 'Name is required.';
     if (!form.vanity.trim()) errs.vanity = 'Vanity URL is required.';
+    else if (!validateVanity(form.vanity.trim())) errs.vanity = 'Vanity URL must be at least 4 characters and only contain lowercase letters, numbers, and hyphens.';
     if (!form.description.trim()) errs.description = 'Description is required.';
     if (!form.royalty.trim()) errs.royalty = 'Royalty is required.';
-    else if (isNaN(Number(form.royalty)) || Number(form.royalty) < 0 || Number(form.royalty) > 50) errs.royalty = 'Royalty must be 0-50.';
+    else if (!/^(\d{1,2}(\.\d{1,2})?|50(\.0{1,2})?)$/.test(form.royalty.trim()) || Number(form.royalty) < 0 || Number(form.royalty) > 50) errs.royalty = 'Royalty must be a number between 0 and 50.';
     if (!form.banner) errs.banner = 'Banner is required.';
     if (!form.website.trim()) errs.website = 'Website is required.';
     else if (!validateUrl(form.website.trim())) errs.website = 'Enter a valid website URL.';
@@ -233,17 +287,18 @@ export default function LaunchPage() {
           </form>
         ) : showPreview && nftPreviews && nftPreviews.length > 0 ? (
           <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center gap-8 bg-black p-8 rounded-2xl border-2 border-[#32CD32]">
-            <div className="w-full flex flex-row items-center mb-4">
+            <div className="w-full flex flex-row items-center mb-6">
               <button
                 type="button"
-                className="flex items-center gap-2 px-6 py-3 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors text-lg"
+                className="mr-2 text-[#32CD32] hover:text-green-400 focus:outline-none"
+                style={{ background: 'none', border: 'none', boxShadow: 'none', padding: 0, fontSize: '1.7rem', lineHeight: 1 }}
                 onClick={() => setShowPreview(false)}
+                aria-label="Back"
               >
-                <span className="text-xl">&#8592;</span>
-                Back
+                &#8592;
               </button>
+              <h4 className="text-xl font-semibold text-white ml-1">NFT Preview <span className="text-green-400 font-normal">({nftPreviews.length})</span></h4>
             </div>
-            <h4 className="text-yellow-300 font-bold mb-2">NFT Preview ({nftPreviews.length})</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
               {nftPreviews.map((nft, idx) => (
                 <div key={idx} className="flex flex-col items-center bg-[#222] rounded-xl p-4 border border-[#32CD32]">
@@ -252,13 +307,39 @@ export default function LaunchPage() {
                 </div>
               ))}
             </div>
+            <button
+              type="button"
+              className="mt-8 px-7 py-2 bg-[#32CD32] text-black rounded-md font-medium hover:bg-green-500 transition-colors text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 disabled:opacity-50"
+              disabled={!metaFile || zipLoading || !Array.isArray(nftPreviews) || nftPreviews.length === 0}
+              onClick={() => {
+                if (!metaFile || zipLoading || !Array.isArray(nftPreviews) || nftPreviews.length === 0) {
+                  setZipError('Upload a valid collection.');
+                  return;
+                }
+                // If valid, proceed to next step (implement as needed)
+              }}
+            >
+              Launch
+            </button>
           </div>
         ) : (
           <form
             className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center gap-8 bg-black p-8 rounded-2xl border-2 border-[#32CD32]"
             onSubmit={e => { e.preventDefault(); /* Next step logic here */ }}
           >
-            <h2 className="text-3xl font-extrabold mb-4 text-[#32CD32]">Upload Collection Metadata</h2>
+            <div className="w-full flex flex-row items-center mb-4">
+              <button
+                type="button"
+                className="mr-2 text-[#32CD32] hover:text-green-400 focus:outline-none"
+                style={{ background: 'none', border: 'none', boxShadow: 'none', padding: 0, fontSize: '1.7rem', lineHeight: 1 }}
+                onClick={() => setStep(1)}
+                aria-label="Back"
+                disabled={submitting}
+              >
+                &#8592;
+              </button>
+              <h2 className="text-3xl font-extrabold text-[#32CD32] ml-1">Upload Collection Metadata</h2>
+            </div>
             <div
               className="w-full flex flex-col items-center justify-center gap-4 border-4 border-dashed rounded-2xl p-10 bg-[#111] hover:bg-[#181818] transition-colors relative cursor-pointer"
               style={{ borderColor: '#32CD32', minHeight: 220 }}
@@ -366,28 +447,35 @@ export default function LaunchPage() {
                 <div className="text-green-300 text-base mt-2"><span className="font-semibold">Total Supply:</span> {totalSupply}</div>
               )}
             </div>
-            <div className="flex flex-row gap-4 mt-6">
+            <div className="w-full flex flex-row justify-end mt-8">
               <button
                 type="button"
-                className="px-8 py-3 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors text-lg"
-                onClick={() => setStep(1)}
-                disabled={submitting}
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                className="px-8 py-3 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors text-lg disabled:opacity-50"
+                className="px-7 py-2 bg-[#32CD32] text-black rounded-md font-medium hover:bg-green-500 transition-colors text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 disabled:opacity-50"
                 disabled={!metaFile || zipLoading || !Array.isArray(nftPreviews) || nftPreviews.length === 0}
-                onClick={() => {
+                onClick={async () => {
                   if (!metaFile || zipLoading || !Array.isArray(nftPreviews) || nftPreviews.length === 0) {
                     setZipError('Upload a valid collection.');
                     return;
                   }
+                  // Fetch token amount worth $10 USD and log to terminal
+                  try {
+                    const res = await fetch('/api/token-usd');
+                    const data = await res.json();
+                    if (data && data.amount && data.price) {
+                      // eslint-disable-next-line no-console
+                      console.log(`$10 USD = ${data.amount} tokens (1 token = $${data.price})`);
+                    } else {
+                      // eslint-disable-next-line no-console
+                      console.log('Could not fetch token price.');
+                    }
+                  } catch (err) {
+                    // eslint-disable-next-line no-console
+                    console.log('Error fetching token price:', err);
+                  }
                   // If valid, proceed to next step (implement as needed)
                 }}
               >
-                Next
+                Launch
               </button>
             </div>
           </form>
