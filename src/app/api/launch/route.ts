@@ -95,6 +95,22 @@ export async function POST(req: Request) {
         metadataFolderCID: `ipfs://${metadataFolderCID}`,
         collectionImageCid: collectionImageCid ? `ipfs://${collectionImageCid}` : '',
       });
+    } else if (uploadType === 'collection-metadata') {
+      // Handle collection-level metadata JSON upload
+      const collectionMetadataFile = formData.get('collectionMetadata') as File;
+      if (!collectionMetadataFile) {
+        return NextResponse.json({ error: 'No collection metadata file provided' }, { status: 400 });
+      }
+      // Save to temp file
+      const tempDir = os.tmpdir();
+      const tempPath = path.join(tempDir, collectionMetadataFile.name);
+      const buffer = Buffer.from(await collectionMetadataFile.arrayBuffer());
+      fs.writeFileSync(tempPath, buffer);
+      // Upload to Lighthouse
+      const res = await lighthouse.upload(tempPath, API_KEY!);
+      const collectionMetadataCid = res.data.Hash;
+      fs.unlinkSync(tempPath);
+      return NextResponse.json({ collectionMetadataCid: `ipfs://${collectionMetadataCid}` });
     } else {
       return NextResponse.json({ error: 'Invalid uploadType' }, { status: 400 });
     }

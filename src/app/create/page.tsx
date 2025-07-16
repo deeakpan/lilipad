@@ -257,8 +257,10 @@ export default function CreatePage() {
 
   const progressSteps = [
     'Uploading images to IPFS...',
-    'Updating metadata...',
-    'Uploading metadata to IPFS...',
+    'Updating NFT metadata...',
+    'Uploading NFT metadata to IPFS...',
+    'Uploading collection banner to IPFS...',
+    'Uploading collection metadata to IPFS...',
     'Done!'
   ];
 
@@ -322,7 +324,6 @@ export default function CreatePage() {
         description: collectionDesc,
       }));
       if (bannerFile) metadataFormData.append('collectionImage', bannerFile);
-      // Pass imagesFolderCID to the backend with the metadata upload
       metadataFormData.append('imagesFolderCID', imagesFolderCID);
       const metadataRes = await fetch('/api/launch', {
         method: 'POST',
@@ -330,10 +331,59 @@ export default function CreatePage() {
       });
       const metadataData = await metadataRes.json();
       if (metadataData.error) throw new Error(metadataData.error);
-      setLaunchResult({ ...metadataData, imagesFolderCID: imagesData.imagesFolderCID });
       setProgressStep(3);
       setProgressMessage(progressSteps[3]);
-      // Do NOT auto-close modal
+      // 4. Collection banner upload is part of metadata upload, so we just show the step and use the returned CID
+      const collectionImageCid = metadataData.collectionImageCid?.replace('ipfs://', '');
+      // 5. Generate and upload collection-level metadata JSON
+      setProgressStep(4);
+      setProgressMessage(progressSteps[4]);
+      const metadataFolderCID = metadataData.metadataFolderCID?.replace('ipfs://', '');
+      // Socials
+      const xUrl = username ? `https://x.com/${username.replace(/^@/, '')}` : undefined;
+      const igUrl = instagram ? `https://instagram.com/${instagram.replace(/^@/, '')}` : undefined;
+      // Compose collection metadata
+      const collectionMetadata = {
+        name: collectionName,
+        description: collectionDesc,
+        image: collectionImageCid ? `ipfs://${collectionImageCid}` : undefined,
+        external_link: website || undefined,
+        seller_fee_basis_points: royalty ? Math.round(Number(royalty) * 100) : undefined, // 5% => 500
+        fee_recipient: undefined, // can be set if needed
+        socials: {
+          x: xUrl,
+          instagram: igUrl,
+          website: website || undefined,
+        },
+        baseURI: metadataFolderCID ? `ipfs://${metadataFolderCID}` : undefined,
+        total_supply: extractedPairs.length,
+        items: extractedPairs.map(pair => ({ name: pair.metadata.name, num: pair.num })),
+        mint_start: mintStartISO || undefined,
+        mint_end: mintEndISO || undefined,
+      };
+      const collectionMetadataFile = new File([
+        JSON.stringify(collectionMetadata, null, 2)
+      ], 'collection.json', { type: 'application/json' });
+      const collectionMetaFormData = new FormData();
+      collectionMetaFormData.append('uploadType', 'collection-metadata');
+      collectionMetaFormData.append('collectionMetadata', collectionMetadataFile);
+      // Pass CIDs for reference
+      if (collectionImageCid) collectionMetaFormData.append('collectionImageCid', collectionImageCid);
+      if (metadataFolderCID) collectionMetaFormData.append('metadataFolderCID', metadataFolderCID);
+      const collectionMetaRes = await fetch('/api/launch', {
+        method: 'POST',
+        body: collectionMetaFormData,
+      });
+      const collectionMetaData = await collectionMetaRes.json();
+      if (collectionMetaData.error) throw new Error(collectionMetaData.error);
+      setLaunchResult({
+        ...metadataData,
+        imagesFolderCID: imagesData.imagesFolderCID,
+        collectionMetadataCid: collectionMetaData.collectionMetadataCid,
+        collectionImageCid: collectionImageCid ? `ipfs://${collectionImageCid}` : '',
+      });
+      setProgressStep(5);
+      setProgressMessage(progressSteps[5]);
     } catch (e: any) {
       setProgressError(e.message || 'Failed to launch');
       setProgressMessage('Error');
@@ -914,8 +964,11 @@ export default function CreatePage() {
         )}
       </div>
       {showProgressModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-[#181818] border border-[#32CD32] rounded-xl shadow-lg max-w-[400px] w-full max-h-[85vh] overflow-y-auto flex flex-col items-center relative p-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="bg-[#181818] border border-[#32CD32] rounded-xl shadow-lg max-w-[400px] w-full max-h-[85vh] overflow-y-auto flex flex-col items-center relative p-0 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <div className="text-yellow-400 text-center font-bold text-sm w-full mb-2 mt-4">
+              ⚠️ Do not close this modal or navigate away until the process is complete.
+            </div>
             {/* Close button only when successful */}
             {progressStep === progressSteps.length - 1 && !progressError && (
               <button
@@ -964,9 +1017,19 @@ export default function CreatePage() {
                       </div>
                     </div>
                   )}
+                  {launchResult.collectionImageCid && (
+                    <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#FFD700]">
+                      <div className="text-xs text-[#FFD700] font-semibold mb-0.5">Collection Banner CID</div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.collectionImageCid}</span>
+                        <a href={launchResult.collectionImageCid.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/')} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#FFD700] underline">View</a>
+                        <button className="ml-1 text-xs text-[#FFD700] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionImageCid || '')}>Copy</button>
+                      </div>
+                    </div>
+                  )}
                   {launchResult.metadataFolderCID && (
                     <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
-                      <div className="text-xs text-[#32CD32] font-semibold mb-0.5">Collection Metadata Folder CID</div>
+                      <div className="text-xs text-[#32CD32] font-semibold mb-0.5">NFT Metadata Folder CID</div>
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.metadataFolderCID}</span>
                         <a href={launchResult.metadataFolderCID.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/') + '/0.json'} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View 0.json</a>
@@ -981,6 +1044,16 @@ export default function CreatePage() {
                         <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.imagesFolderCID}</span>
                         <a href={launchResult.imagesFolderCID.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/') + '/0.png'} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View 0.png</a>
                         <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.imagesFolderCID || '')}>Copy</button>
+                      </div>
+                    </div>
+                  )}
+                  {launchResult.collectionMetadataCid && (
+                    <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
+                      <div className="text-xs text-[#32CD32] font-semibold mb-0.5">Collection Metadata CID</div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.collectionMetadataCid}</span>
+                        <a href={launchResult.collectionMetadataCid.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/')} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View</a>
+                        <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionMetadataCid || '')}>Copy</button>
                       </div>
                     </div>
                   )}
