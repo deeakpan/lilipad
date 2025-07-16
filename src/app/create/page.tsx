@@ -55,7 +55,7 @@ export default function CreatePage() {
 
   // Vanity URL validation
   function validateVanityUrl(value: string) {
-    if (value.length <= 4) return 'Must be more than 4 characters';
+    if (value.length < 4) return 'Must be at least 4 characters';
     if (/^[\-]/.test(value)) return 'Cannot start with a dash';
     if (/--/.test(value)) return 'Cannot have two dashes in a row';
     if ((value.match(/-/g) || []).length > 3) return 'No more than 3 dashes allowed';
@@ -161,6 +161,11 @@ export default function CreatePage() {
         }
       }
       setExtractedPairs(pairs);
+      if (pairs.length < 5) {
+        setExtractError('You must upload at least 5 NFTs in your collection.');
+        setExtractedPairs([]);
+        return;
+      }
     } catch (e) {
       setExtractError('Failed to extract or parse ZIP.');
     }
@@ -197,9 +202,7 @@ export default function CreatePage() {
   const isDatesValid = !!mintStartISO && !!mintEndISO && new Date(mintStartISO) < new Date(mintEndISO);
 
   // Helper for price validation
-  const isMintPriceValid = samePrice
-    ? !!allPrice && !isNaN(Number(allPrice)) && Number(allPrice) > 0
-    : extractedPairs.length > 0 && Object.keys(individualPrices).length === extractedPairs.length && Object.values(individualPrices).every(p => !!p && !isNaN(Number(p)) && Number(p) > 0);
+  const isMintPriceValid = extractedPairs.length > 0 && Object.values(individualPrices).every(p => !!p && !isNaN(Number(p)) && Number(p) > 0);
 
   // Add state for live countdown
   const [countdown, setCountdown] = useState("");
@@ -390,6 +393,17 @@ export default function CreatePage() {
     }
     setLaunching(false);
   }
+
+  useEffect(() => {
+    if (showProgressModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showProgressModal]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#000', color: '#32CD32', borderColor: '#32CD32' }}>
@@ -662,7 +676,12 @@ export default function CreatePage() {
                   type="file"
                   accept=".zip"
                   className="hidden"
-                  onChange={e => setZipFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
+                  onChange={e => {
+                    setZipFile(e.target.files && e.target.files[0] ? e.target.files[0] : null);
+                    setExtractedPairs([]);
+                    setExtractError('');
+                    setIsExtracting(false);
+                  }}
                 />
                 {zipFile && (
                   <span className="mt-4 text-green-300 font-semibold">Selected: {zipFile.name}</span>
@@ -730,37 +749,20 @@ export default function CreatePage() {
                 {/* Pricing section */}
                 <div className="w-full mt-6 flex flex-col gap-3 items-start">
                   <div className="flex items-center gap-4">
-                    <span className="text-white font-semibold">Pricing:</span>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <Switch
-                        onChange={() => setSamePrice(!samePrice)}
-                        checked={samePrice}
-                        onColor="#32CD32"
-                        offColor="#222"
-                        uncheckedIcon={false}
-                        checkedIcon={false}
-                        height={20}
-                        width={40}
-                      />
-                      <span className="text-sm text-white">Use same price for all</span>
-                    </label>
+                    <span className="text-white font-semibold">Mint Price:</span>
                   </div>
-                  {samePrice ? (
-                    <div className="flex flex-col gap-1 mt-2">
-                      <input
-                        type="number"
-                        min="0"
-                        step="any"
-                        className="w-32 py-2 px-3 rounded border border-[#32CD32] bg-black text-white text-sm focus:outline-none focus:border-yellow-400"
-                        placeholder="Enter price for all NFTs (PEPU)"
-                        value={allPrice}
-                        onChange={e => setAllPrice(e.target.value)}
-                        required
-                      />
-                    </div>
-                  ) : (
-                    <div className="text-xs text-gray-400 mt-1">Set price for each NFT below.</div>
-                  )}
+                  <div className="flex flex-col gap-1 mt-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      className="w-32 py-2 px-3 rounded border border-[#32CD32] bg-black text-white text-sm focus:outline-none focus:border-yellow-400"
+                      placeholder="1000 PEPU"
+                      value={allPrice}
+                      onChange={e => setAllPrice(e.target.value)}
+                      required
+                    />
+                  </div>
                   {extractedPairs.length > 0 && (
                     <span className="text-xs text-green-200 mt-1">Total supply: {extractedPairs.length}</span>
                   )}
@@ -893,7 +895,7 @@ export default function CreatePage() {
               <div className="flex flex-row gap-6 items-center mb-1">
                 <div className="flex flex-col">
                   <span className="text-[11px] font-bold text-[#32CD32] uppercase tracking-widest mb-0.5">Mint Price</span>
-                  <span className="text-base font-mono font-bold text-white">{samePrice ? (allPrice || '—') : 'Varies'} <span className="text-xs text-green-200">PEPU</span></span>
+                  <span className="text-base font-mono font-bold text-white">{allPrice || '—'} <span className="text-xs text-green-200">PEPU</span></span>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[11px] font-bold text-[#32CD32] uppercase tracking-widest mb-0.5">Total Supply</span>
@@ -947,121 +949,110 @@ export default function CreatePage() {
             </div>
           </div>
         )}
-        {launchResult && (
-          <div className="mt-4 w-full max-w-2xl bg-[#181818] border border-[#32CD32] rounded-lg p-4 text-sm text-white">
-            {launchResult.error ? (
-              <span className="text-red-400 font-bold">{launchResult.error}</span>
-            ) : (
-              <>
-                <div className="text-green-300 font-bold mb-2">Launch Successful!</div>
-                <div className="break-all">Collection Image CID: {launchResult.collectionImageCid}</div>
-                <div className="break-all">Collection Metadata CID: {launchResult.collectionMetadataCid}</div>
-                <div className="break-all">NFT Image CIDs: {JSON.stringify(launchResult.imageCids)}</div>
-                <div className="break-all">NFT Metadata CIDs: {JSON.stringify(launchResult.updatedMetadataCids)}</div>
-              </>
-            )}
-        </div>
-        )}
+    
       </div>
       {showProgressModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="bg-[#181818] border border-[#32CD32] rounded-xl shadow-lg max-w-[400px] w-full max-h-[85vh] overflow-y-auto flex flex-col items-center relative p-0 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            <div className="text-yellow-400 text-center font-bold text-sm w-full mb-2 mt-4">
-              ⚠️ Do not close this modal or navigate away until the process is complete.
-            </div>
-            {/* Close button only when successful */}
-            {progressStep === progressSteps.length - 1 && !progressError && (
-              <button
-                className="absolute top-2 right-3 text-gray-400 hover:text-white text-2xl font-bold focus:outline-none"
-                onClick={() => setShowProgressModal(false)}
-                aria-label="Close"
-                type="button"
-              >
-                ×
-              </button>
-            )}
-            <div className="w-full px-6 pt-6 pb-2 flex flex-col items-center">
-              <h2 className="text-lg font-bold text-white mb-2 tracking-wide">Launching Collection</h2>
-              <div className="w-full bg-[#222] rounded-full h-1.5 mb-4">
-                <div
-                  className="bg-[#32CD32] h-1.5 rounded-full transition-all duration-300"
-                  style={{ width: `${((progressStep + 1) / progressSteps.length) * 100}%` }}
-                ></div>
+        <>
+          <div className="fixed inset-0 z-50 bg-black bg-opacity-20" style={{ pointerEvents: 'all', backdropFilter: 'blur(1px)', backgroundColor: 'rgba(0,0,0,0.2)' }}></div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="bg-[#181818] border border-[#32CD32] rounded-xl shadow-lg max-w-[400px] w-full max-h-[85vh] overflow-y-auto flex flex-col items-center relative p-0 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div className="text-yellow-400 text-center font-bold text-sm w-full mb-2 mt-4">
+                ⚠️ Do not close this modal or navigate away until the process is complete.
               </div>
-              <ul className="w-full mb-2 flex flex-col gap-1">
-                {progressSteps.map((step, idx) => (
-                  <li key={step} className={`flex items-center gap-2 text-sm ${idx === progressStep ? 'font-bold text-white' : idx < progressStep ? 'text-green-400' : 'text-gray-400'}`}>
-                    {idx < progressStep && <span className="inline-block w-3 h-3 bg-[#32CD32] rounded-full flex items-center justify-center">✓</span>}
-                    {idx === progressStep && <Spinner />}
-                    {idx > progressStep && <span className="inline-block w-3 h-3 border border-gray-400 rounded-full"></span>}
-                    <span className="truncate">{step}</span>
-                  </li>
-                ))}
-              </ul>
-              {progressError && (
-                <div className="text-red-400 font-semibold mt-2 text-center w-full">{progressError}</div>
+              {/* Close button only when successful */}
+              {progressStep === progressSteps.length - 1 && !progressError && (
+                <button
+                  className="absolute top-2 right-3 text-gray-400 hover:text-white text-2xl font-bold focus:outline-none"
+                  onClick={() => setShowProgressModal(false)}
+                  aria-label="Close"
+                  type="button"
+                >
+                  ×
+                </button>
+              )}
+              <div className="w-full px-6 pt-6 pb-2 flex flex-col items-center">
+                <h2 className="text-lg font-bold text-white mb-2 tracking-wide">Launching Collection</h2>
+                <div className="w-full bg-[#222] rounded-full h-1.5 mb-4">
+                  <div
+                    className="bg-[#32CD32] h-1.5 rounded-full transition-all duration-300"
+                    style={{ width: `${((progressStep + 1) / progressSteps.length) * 100}%` }}
+                  ></div>
+                </div>
+                <ul className="w-full mb-2 flex flex-col gap-1">
+                  {progressSteps.map((step, idx) => (
+                    <li key={step} className={`flex items-center gap-2 text-sm ${idx === progressStep ? 'font-bold text-white' : idx < progressStep ? 'text-green-400' : 'text-gray-400'}`}>
+                      {idx < progressStep && <span className="inline-block w-3 h-3 bg-[#32CD32] rounded-full flex items-center justify-center">✓</span>}
+                      {idx === progressStep && <Spinner />}
+                      {idx > progressStep && <span className="inline-block w-3 h-3 border border-gray-400 rounded-full"></span>}
+                      <span className="truncate">{step}</span>
+                    </li>
+                  ))}
+                </ul>
+                {progressError && (
+                  <div className="text-red-400 font-semibold mt-2 text-center w-full">{progressError}</div>
+                )}
+              </div>
+              {!progressError && progressStep === progressSteps.length - 1 && launchResult && (
+                <>
+                  <div className="w-full border-t border-[#32CD32] my-2"></div>
+                  <div className="w-full px-6 pb-6 flex flex-col gap-2 items-start">
+                    <div className="text-green-400 font-semibold mb-1 text-base">Launch Successful!</div>
+                    {launchResult.collectionImageCid && (
+                      <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
+                        <div className="text-xs text-[#32CD32] font-semibold mb-0.5">Collection Image CID</div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.collectionImageCid}</span>
+                          <a href={launchResult.collectionImageCid.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/')} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View</a>
+                          <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionImageCid || '')}>Copy</button>
+                        </div>
+                      </div>
+                    )}
+                    {launchResult.collectionImageCid && (
+                      <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#FFD700]">
+                        <div className="text-xs text-[#FFD700] font-semibold mb-0.5">Collection Banner CID</div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.collectionImageCid}</span>
+                          <a href={launchResult.collectionImageCid.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/')} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#FFD700] underline">View</a>
+                          <button className="ml-1 text-xs text-[#FFD700] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionImageCid || '')}>Copy</button>
+                        </div>
+                      </div>
+                    )}
+                    {launchResult.metadataFolderCID && (
+                      <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
+                        <div className="text-xs text-[#32CD32] font-semibold mb-0.5">NFT Metadata Folder CID</div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.metadataFolderCID}</span>
+                          <a href={launchResult.metadataFolderCID.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/') + '/0.json'} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View 0.json</a>
+                          <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.metadataFolderCID || '')}>Copy</button>
+                        </div>
+                      </div>
+                    )}
+                    {launchResult.imagesFolderCID && (
+                      <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
+                        <div className="text-xs text-[#32CD32] font-semibold mb-0.5">Images Folder CID</div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.imagesFolderCID}</span>
+                          <a href={launchResult.imagesFolderCID.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/') + '/0.png'} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View 0.png</a>
+                          <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.imagesFolderCID || '')}>Copy</button>
+                        </div>
+                      </div>
+                    )}
+                    {launchResult.collectionMetadataCid && (
+                      <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
+                        <div className="text-xs text-[#32CD32] font-semibold mb-0.5">Collection Metadata CID</div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.collectionMetadataCid}</span>
+                          <a href={launchResult.collectionMetadataCid.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/')} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View</a>
+                          <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionMetadataCid || '')}>Copy</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
-            {!progressError && progressStep === progressSteps.length - 1 && launchResult && (
-              <>
-                <div className="w-full border-t border-[#32CD32] my-2"></div>
-                <div className="w-full px-6 pb-6 flex flex-col gap-2 items-start">
-                  <div className="text-green-400 font-semibold mb-1 text-base">Launch Successful!</div>
-                  {launchResult.collectionImageCid && (
-                    <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
-                      <div className="text-xs text-[#32CD32] font-semibold mb-0.5">Collection Image CID</div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.collectionImageCid}</span>
-                        <a href={launchResult.collectionImageCid.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/')} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View</a>
-                        <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionImageCid || '')}>Copy</button>
-                      </div>
-                    </div>
-                  )}
-                  {launchResult.collectionImageCid && (
-                    <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#FFD700]">
-                      <div className="text-xs text-[#FFD700] font-semibold mb-0.5">Collection Banner CID</div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.collectionImageCid}</span>
-                        <a href={launchResult.collectionImageCid.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/')} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#FFD700] underline">View</a>
-                        <button className="ml-1 text-xs text-[#FFD700] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionImageCid || '')}>Copy</button>
-                      </div>
-                    </div>
-                  )}
-                  {launchResult.metadataFolderCID && (
-                    <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
-                      <div className="text-xs text-[#32CD32] font-semibold mb-0.5">NFT Metadata Folder CID</div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.metadataFolderCID}</span>
-                        <a href={launchResult.metadataFolderCID.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/') + '/0.json'} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View 0.json</a>
-                        <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.metadataFolderCID || '')}>Copy</button>
-                      </div>
-                    </div>
-                  )}
-                  {launchResult.imagesFolderCID && (
-                    <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
-                      <div className="text-xs text-[#32CD32] font-semibold mb-0.5">Images Folder CID</div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.imagesFolderCID}</span>
-                        <a href={launchResult.imagesFolderCID.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/') + '/0.png'} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View 0.png</a>
-                        <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.imagesFolderCID || '')}>Copy</button>
-                      </div>
-                    </div>
-                  )}
-                  {launchResult.collectionMetadataCid && (
-                    <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
-                      <div className="text-xs text-[#32CD32] font-semibold mb-0.5">Collection Metadata CID</div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.collectionMetadataCid}</span>
-                        <a href={launchResult.collectionMetadataCid.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/')} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View</a>
-                        <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionMetadataCid || '')}>Copy</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
           </div>
-        </div>
+        </>
       )}
     </div>
   );
