@@ -439,524 +439,535 @@ export default function CreatePage() {
         )}
       </div>
       {/* Page Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-8">
-        {/* Top Section: Big Heading and Subtext */}
-        <div className="w-full max-w-5xl mx-auto px-4 pt-8 pb-2 text-left">
-          <h2 className="text-3xl font-extrabold mb-1" style={{ color: '#32CD32' }}>
-            Launch NFTs on Pepe Unchained
-          </h2>
-          <span className="text-lg text-green-200 font-medium">
-            Start by generating and exporting your collection metadata{' '}
-            <a href="https://lilipad-nft-export.vercel.app" target="_blank" rel="noopener noreferrer" className="underline text-yellow-300 hover:text-yellow-400">here</a>
-          </span>
-        </div>
-        {/* Cards Section or Form */}
-        {!showForm ? (
-        <div className="w-full max-w-5xl mx-auto px-4 py-12">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Card 1: Launch an NFT */}
-              <div className="flex flex-col items-center justify-center bg-[#111] border-2 border-[#32CD32] rounded-2xl shadow-lg p-8 transition-transform hover:scale-105 hover:border-yellow-400 hover:shadow-[0_0_8px_2px_#FFD600] min-h-[220px] cursor-pointer text-center">
-                <FaArrowUp className="text-[#32CD32] mb-4" style={{ fontSize: 56, minHeight: 56, minWidth: 56 }} />
-                <span className="text-2xl font-extrabold text-white mb-2">Mint a Single NFT</span>
-                <span className="text-base text-green-200">Quickly mint one NFT into any of your collections.</span>
-              </div>
-              {/* Card 2: Launch a Collection (Generative) */}
-              <div className="flex flex-col items-center justify-center bg-[#111] border-2 border-[#32CD32] rounded-2xl shadow-lg p-8 transition-transform hover:scale-105 hover:border-yellow-400 hover:shadow-[0_0_8px_2px_#FFD600] min-h-[220px] cursor-pointer text-center">
-                <FaLayerGroup className="text-[#FFD600] mb-4" style={{ fontSize: 56, minHeight: 56, minWidth: 56 }} />
-                <span className="text-2xl font-extrabold text-white mb-2">Create Generative Collection</span>
-                <span className="text-base text-green-200">Launch a collection using layers and traits for generative art.</span>
-              </div>
-              {/* Card 3: Launch a Collection (One-of-One) */}
-              <div
-                className="flex flex-col items-center justify-center bg-[#111] border-2 border-[#32CD32] rounded-2xl shadow-lg p-8 transition-transform hover:scale-105 hover:border-yellow-400 hover:shadow-[0_0_8px_2px_#FFD600] min-h-[220px] cursor-pointer text-center"
-              onClick={() => {
-                  if (!isConnected) {
-                    setShowModal(true);
-                } else {
-                    setShowForm(true);
-                  }
-                }}
-              >
-                <FaThLarge className="text-[#22c55e] mb-4" style={{ fontSize: 56, minHeight: 56, minWidth: 56 }} />
-                <span className="text-2xl font-extrabold text-white mb-2">Create One-of-One Collection</span>
-                <span className="text-base text-green-200">Build a collection of unique, individually uploaded NFTs.</span>
-              </div>
-            </div>
-            {/* Modal for connect wallet */}
-            {showModal && (
-              <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                <div className="bg-black border-2 border-[#32CD32] rounded-xl shadow-xl p-6 max-w-xs w-full flex flex-col items-center">
-                  <span className="text-base font-bold text-white mb-3">
-                    Connect your wallet to create a
-                    <span className="block text-white text-lg text-center mx-auto">collection</span>
-                  </span>
-                  <ConnectButtonBase.Custom>
-                    {({ openConnectModal }) => (
-                      <button
-                        onClick={() => { openConnectModal(); setShowModal(false); }}
-                        className="px-4 py-2 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors text-base mt-2"
-                      >
-                        Connect Wallet
-                      </button>
-                    )}
-                  </ConnectButtonBase.Custom>
-                  <button
-                    onClick={() => setShowModal(false)}
-                    className="mt-3 text-[#32CD32] underline hover:text-yellow-400 text-sm"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
+      <div className="flex-1 flex flex-col items-center justify-center px-2 sm:px-4 md:px-8">
+          {/* Top Section: Big Heading and Subtext */}
+          <div className="w-full px-0 sm:px-2 pt-4 pb-2 text-left">
+            <h2 className="text-2xl sm:text-3xl font-extrabold mb-1" style={{ color: '#32CD32' }}>
+              Launch NFTs on Pepe Unchained
+            </h2>
+            <span className="text-base sm:text-lg text-green-200 font-medium">
+              Start by generating and exporting your collection metadata{' '}
+              <a href="https://lilipad-nft-export.vercel.app" target="_blank" rel="noopener noreferrer" className="underline text-yellow-300 hover:text-yellow-400">here</a>
+            </span>
           </div>
-        ) : null}
-        {/* Show form below the top section, not as a replacement */}
-        {showForm && !showUploadBox && (
-          <div className="w-full max-w-5xl mx-auto px-4 py-12 text-left">
-            <div className="max-w-2xl">
-              <h2 className="text-2xl font-bold mb-6 text-yellow-300">Create One-of-One Collection</h2>
-              <form className="flex flex-col gap-8">
-                {/* Group: Main Info (Name, Description, Vanity URL) */}
-                <div className="p-5 rounded-xl bg-[#181818] border border-[#333] flex flex-col gap-5">
-                  {/* Collection Name */}
-                  <label className="flex flex-col gap-2">
-                    <span className="font-semibold text-white">Collection Name</span>
-                    <input
-                      type="text"
-                      className="py-3 px-4 rounded-xl border-2 border-[#444] bg-[#181818] text-white focus:outline-none focus:border-[#32CD32] transition-all"
-                      value={collectionName}
-                      onChange={e => setCollectionName(e.target.value)}
-                      placeholder="Enter collection name"
-                      required
-                    />
-                  </label>
-                  {/* Description */}
-                  <label className="flex flex-col gap-2">
-                    <span className="font-semibold text-white">Description</span>
-                    <textarea
-                      className="py-3 px-4 rounded-xl border-2 border-[#444] bg-[#181818] text-white focus:outline-none focus:border-[#32CD32] transition-all"
-                      value={collectionDesc}
-                      onChange={e => setCollectionDesc(e.target.value)}
-                      placeholder="Enter collection description"
-                      rows={4}
-                      required
-                    />
-                  </label>
-                  {/* Vanity URL with validation */}
-                  <label className="flex flex-col gap-2">
-                    <span className="font-semibold text-white">Vanity URL</span>
-                    <input
-                      type="text"
-                      className="py-3 px-4 rounded-xl border-2 border-[#444] bg-[#181818] text-white focus:outline-none focus:border-[#32CD32] transition-all"
-                      value={vanityUrl}
-                      onChange={handleVanityUrlChange}
-                      placeholder="e.g. my-cool-collection"
-                      required
-                    />
-                    <span className="text-xs text-green-200 mt-1">https://lilipad.art/collection/{vanityUrl || 'your-collection-name'}</span>
-                    {vanityUrlError && (
-                      <span className="text-red-400 text-xs mt-1">{vanityUrlError}</span>
-                    )}
-                  </label>
+          {/* Cards Section or Form */}
+          {!showForm ? (
+          <div className="w-full px-0 sm:px-2 py-6 sm:py-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8">
+                {/* Card 1: Launch an NFT */}
+                <div className="flex flex-col items-center justify-center bg-[#111] border-2 border-[#32CD32] rounded-2xl shadow-lg p-6 sm:p-8 transition-transform hover:scale-105 hover:border-yellow-400 hover:shadow-[0_0_8px_2px_#FFD600] min-h-[180px] sm:min-h-[220px] cursor-pointer text-center">
+                  <FaArrowUp className="text-[#32CD32] mb-4" style={{ fontSize: 40, minHeight: 40, minWidth: 40 }} />
+                  <span className="text-lg sm:text-2xl font-extrabold text-white mb-2">Mint a Single NFT</span>
+                  <span className="text-sm sm:text-base text-green-200">Quickly mint one NFT into any of your collections.</span>
                 </div>
-                {/* Group: Socials */}
-                <div className="p-5 rounded-xl bg-[#181818] border border-[#333] flex flex-col gap-5">
-                  {/* Twitter Username and Instagram */}
-                  <div className="flex gap-4">
-                    <label className="flex-1 flex flex-col gap-2">
-                      <span className="font-semibold text-white">Twitter Username</span>
+                {/* Card 2: Launch a Collection (Generative) */}
+                <div className="flex flex-col items-center justify-center bg-[#111] border-2 border-[#32CD32] rounded-2xl shadow-lg p-6 sm:p-8 transition-transform hover:scale-105 hover:border-yellow-400 hover:shadow-[0_0_8px_2px_#FFD600] min-h-[180px] sm:min-h-[220px] cursor-pointer text-center">
+                  <FaLayerGroup className="text-[#FFD600] mb-4" style={{ fontSize: 40, minHeight: 40, minWidth: 40 }} />
+                  <span className="text-lg sm:text-2xl font-extrabold text-white mb-2">Create Generative Collection</span>
+                  <span className="text-sm sm:text-base text-green-200">Launch a collection using layers and traits for generative art.</span>
+                </div>
+                {/* Card 3: Launch a Collection (One-of-One) */}
+                <div
+                  className="flex flex-col items-center justify-center bg-[#111] border-2 border-[#32CD32] rounded-2xl shadow-lg p-6 sm:p-8 transition-transform hover:scale-105 hover:border-yellow-400 hover:shadow-[0_0_8px_2px_#FFD600] min-h-[180px] sm:min-h-[220px] cursor-pointer text-center"
+                onClick={() => {
+                    if (!isConnected) {
+                      setShowModal(true);
+                  } else {
+                      setShowForm(true);
+                    }
+                  }}
+                >
+                  <FaThLarge className="text-[#22c55e] mb-4" style={{ fontSize: 40, minHeight: 40, minWidth: 40 }} />
+                  <span className="text-lg sm:text-2xl font-extrabold text-white mb-2">Create One-of-One Collection</span>
+                  <span className="text-sm sm:text-base text-green-200">Build a collection of unique, individually uploaded NFTs.</span>
+                </div>
+              </div>
+              {/* Modal for connect wallet */}
+              {showModal && (
+                <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-xs">
+                  <div className="bg-black border-2 border-[#32CD32] rounded-xl shadow-xl p-4 sm:p-6 w-full flex flex-col items-center">
+                    <span className="text-base font-bold text-white mb-3">
+                      Connect your wallet to create a
+                      <span className="block text-white text-lg text-center mx-auto">collection</span>
+                    </span>
+                    <ConnectButtonBase.Custom>
+                      {({ openConnectModal }) => (
+                        <button
+                          onClick={() => { openConnectModal(); setShowModal(false); }}
+                          className="px-4 py-2 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors text-base mt-2"
+                        >
+                          Connect Wallet
+                        </button>
+                      )}
+                    </ConnectButtonBase.Custom>
+                    <button
+                      onClick={() => setShowModal(false)}
+                      className="mt-3 text-[#32CD32] underline hover:text-yellow-400 text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null}
+          {/* Show form below the top section, not as a replacement */}
+          {showForm && !showUploadBox && (
+            <div className="w-full px-0 sm:px-2 py-6 text-left">
+              <div className="max-w-2xl">
+                <h2 className="text-2xl font-bold mb-6 text-yellow-300">Create One-of-One Collection</h2>
+                <form className="flex flex-col gap-8">
+                  {/* Group: Main Info (Name, Description, Vanity URL) */}
+                  <div className="p-5 rounded-xl bg-[#181818] border border-[#333] flex flex-col gap-5">
+                    {/* Collection Name */}
+                    <label className="flex flex-col gap-2">
+                      <span className="font-semibold text-white">Collection Name</span>
                       <input
                         type="text"
                         className="py-3 px-4 rounded-xl border-2 border-[#444] bg-[#181818] text-white focus:outline-none focus:border-[#32CD32] transition-all"
-                        value={username}
-                        onChange={e => setUsername(e.target.value)}
-                        placeholder="Enter your Twitter username"
+                        value={collectionName}
+                        onChange={e => setCollectionName(e.target.value)}
+                        placeholder="Enter collection name"
                         required
                       />
                     </label>
-                    <label className="flex-1 flex flex-col gap-2">
-                      <span className="font-semibold text-white">Instagram (optional)</span>
+                    {/* Description */}
+                    <label className="flex flex-col gap-2">
+                      <span className="font-semibold text-white">Description</span>
+                      <textarea
+                        className="py-3 px-4 rounded-xl border-2 border-[#444] bg-[#181818] text-white focus:outline-none focus:border-[#32CD32] transition-all"
+                        value={collectionDesc}
+                        onChange={e => setCollectionDesc(e.target.value)}
+                        placeholder="Enter collection description"
+                        rows={4}
+                        required
+                      />
+                    </label>
+                    {/* Vanity URL with validation */}
+                    <label className="flex flex-col gap-2">
+                      <span className="font-semibold text-white">Vanity URL</span>
                       <input
                         type="text"
                         className="py-3 px-4 rounded-xl border-2 border-[#444] bg-[#181818] text-white focus:outline-none focus:border-[#32CD32] transition-all"
-                        value={instagram}
-                        onChange={e => setInstagram(e.target.value)}
-                        placeholder="Instagram handle"
+                        value={vanityUrl}
+                        onChange={handleVanityUrlChange}
+                        placeholder="e.g. my-cool-collection"
+                        required
                       />
+                      <span className="text-xs text-green-200 mt-1">https://lilipad.art/collection/{vanityUrl || 'your-collection-name'}</span>
+                      {vanityUrlError && (
+                        <span className="text-red-400 text-xs mt-1">{vanityUrlError}</span>
+                      )}
                     </label>
                   </div>
-                </div>
-                {/* Group: Banner Upload */}
-                <div className="p-5 rounded-xl bg-[#181818] border border-[#333] flex flex-col gap-2 w-full max-w-2xl">
-                  <span className="font-semibold text-white mb-1">Banner Image</span>
-                  {bannerPreview && (
-                    <img src={bannerPreview} alt="Banner Preview" className="mb-2 rounded-lg max-h-24 max-w-xs object-contain border border-[#444] mx-auto" />
+                  {/* Group: Socials */}
+                  <div className="p-5 rounded-xl bg-[#181818] border border-[#333] flex flex-col gap-5">
+                    {/* Twitter Username and Instagram */}
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                      <label className="flex-1 flex flex-col gap-2 w-full">
+                        <span className="font-semibold text-white">Twitter Username</span>
+                        <input
+                          type="text"
+                          className="py-3 px-4 rounded-xl border-2 border-[#444] bg-[#181818] text-white focus:outline-none focus:border-[#32CD32] transition-all w-full"
+                          value={username}
+                          onChange={e => setUsername(e.target.value)}
+                          placeholder="Enter your Twitter username"
+                          required
+                        />
+                      </label>
+                      <label className="flex-1 flex flex-col gap-2 w-full">
+                        <span className="font-semibold text-white">Instagram (optional)</span>
+                        <input
+                          type="text"
+                          className="py-3 px-4 rounded-xl border-2 border-[#444] bg-[#181818] text-white focus:outline-none focus:border-[#32CD32] transition-all w-full"
+                          value={instagram}
+                          onChange={e => setInstagram(e.target.value)}
+                          placeholder="Instagram handle"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                  {/* Group: Banner Upload */}
+                  <div className="p-5 rounded-xl bg-[#181818] border border-[#333] flex flex-col gap-2 w-full max-w-2xl">
+                    <span className="font-semibold text-white mb-1">Banner Image</span>
+                    {bannerPreview && (
+                      <img src={bannerPreview} alt="Banner Preview" className="mb-2 rounded-lg max-h-24 max-w-xs object-contain border border-[#444] mx-auto" />
+                    )}
+                    <button
+                      type="button"
+                      className="px-4 py-2 bg-[#222] text-white rounded-lg border border-[#444] hover:bg-[#32CD32] hover:text-black font-semibold transition-colors w-fit"
+                      onClick={e => { e.preventDefault(); document.getElementById('banner-upload-input')?.click(); }}
+                    >
+                      Select Image
+                    </button>
+                    <input
+                      id="banner-upload-input"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleBannerChange}
+                    />
+                  </div>
+                  {/* Group: Website and Royalty */}
+                  <div className="p-5 rounded-xl bg-[#181818] border border-[#333] flex flex-col gap-5">
+                    {/* Website with validation */}
+                    <label className="flex flex-col gap-2">
+                      <span className="font-semibold text-white">Website</span>
+                      <input
+                        type="text"
+                        className="py-3 px-4 rounded-xl border-2 border-[#444] bg-[#181818] text-white focus:outline-none focus:border-[#32CD32] transition-all"
+                        value={website}
+                        onChange={e => setWebsite(e.target.value)}
+                        placeholder="https://yourwebsite.com"
+                      />
+                      {website && !/^https:\/\/.+\..+/.test(website) && (
+                        <span className="text-red-400 text-xs mt-1">Website must be a valid https:// URL</span>
+                      )}
+                    </label>
+                    {/* Royalty with validation */}
+                    <label className="flex flex-col gap-2">
+                      <span className="font-semibold text-white">Royalty (%)</span>
+                      <input
+                        type="number"
+                        className="py-3 px-4 rounded-xl border-2 border-[#444] bg-[#181818] text-white focus:outline-none focus:border-[#32CD32] transition-all"
+                        value={royalty}
+                        onChange={handleRoyaltyChange}
+                        placeholder="e.g. 5"
+                        min={0}
+                        max={50}
+                        required
+                      />
+                      <span className="text-xs text-green-300">Max 50%</span>
+                      {royalty && (Number(royalty) > 50) && (
+                        <span className="text-red-400 text-xs mt-1">Royalty cannot exceed 50%</span>
+                      )}
+                    </label>
+                  </div>
+                  <div className="flex gap-4 mt-4">
+                    <button
+                      type="button"
+                      className={`px-6 py-2 bg-[#32CD32] text-black font-bold rounded-full border-2 border-[#32CD32] transition-colors ${(!isFormValid || !isConnected) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-yellow-400 hover:text-black'}`}
+                      onClick={() => isFormValid && isConnected && setShowUploadBox(true)}
+                      disabled={!isFormValid || !isConnected}
+                    >
+                      Next
+                    </button>
+                    <button
+                      type="button"
+                      className="px-6 py-2 bg-black text-[#32CD32] font-bold rounded-full border-2 border-[#32CD32] hover:bg-[#222] transition-colors"
+                      onClick={() => setShowForm(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+          {showForm && showUploadBox && extractedPairs.length === 0 && (
+            <div className="w-full px-0 sm:px-2 py-6 flex flex-col items-start justify-center">
+              <div className="max-w-2xl w-full flex flex-col items-start justify-center">
+                <label htmlFor="zip-upload-input" className="w-full border-2 border-dashed border-[#32CD32] rounded-2xl bg-gradient-to-br from-[#181818] via-[#232323] to-[#181818] flex flex-col items-center justify-center py-12 sm:py-24 cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-200 shadow-lg">
+                  <FaCloudUploadAlt className="mb-6 sm:mb-8" style={{ fontSize: 48, color: '#e5e7eb' }} />
+                  <span className="text-xl sm:text-3xl font-extrabold text-white mb-2 sm:mb-3 text-center">Upload your collection folder</span>
+                  <span className="text-base sm:text-lg text-green-200 mb-3 sm:mb-4 font-medium text-center">with image and metadata (ZIP file)</span>
+                  <input
+                    id="zip-upload-input"
+                    type="file"
+                    accept=".zip"
+                    className="hidden"
+                    onChange={e => {
+                      setZipFile(e.target.files && e.target.files[0] ? e.target.files[0] : null);
+                      setExtractedPairs([]);
+                      setExtractError('');
+                      setIsExtracting(false);
+                    }}
+                  />
+                  {zipFile && (
+                    <span className="mt-3 sm:mt-4 text-green-300 font-semibold text-xs sm:text-base text-center break-all">Selected: {zipFile.name}</span>
                   )}
+                </label>
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6 sm:mt-8 w-full">
                   <button
                     type="button"
-                    className="px-4 py-2 bg-[#222] text-white rounded-lg border border-[#444] hover:bg-[#32CD32] hover:text-black font-semibold transition-colors w-fit"
-                    onClick={e => { e.preventDefault(); document.getElementById('banner-upload-input')?.click(); }}
+                    className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-black text-[#32CD32] font-bold rounded-full border-2 border-[#32CD32] hover:bg-[#222] transition-colors text-sm sm:text-base"
+                    onClick={() => setShowUploadBox(false)}
                   >
-                    Select Image
+                    Back
                   </button>
-                  <input
-                    id="banner-upload-input"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleBannerChange}
-                  />
+                  <button
+                    type="button"
+                    className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-[#32CD32] text-black font-bold rounded-full border-2 border-[#32CD32] hover:bg-yellow-400 hover:text-black transition-colors text-sm sm:text-base"
+                    onClick={handleExtractZip}
+                    disabled={!zipFile || isExtracting}
+                  >
+                    {isExtracting ? 'Extracting...' : 'Next'}
+                  </button>
                 </div>
-                {/* Group: Website and Royalty */}
-                <div className="p-5 rounded-xl bg-[#181818] border border-[#333] flex flex-col gap-5">
-                  {/* Website with validation */}
-                  <label className="flex flex-col gap-2">
-                    <span className="font-semibold text-white">Website</span>
-                    <input
-                      type="text"
-                      className="py-3 px-4 rounded-xl border-2 border-[#444] bg-[#181818] text-white focus:outline-none focus:border-[#32CD32] transition-all"
-                      value={website}
-                      onChange={e => setWebsite(e.target.value)}
-                      placeholder="https://yourwebsite.com"
-                    />
-                    {website && !/^https:\/\/.+\..+/.test(website) && (
-                      <span className="text-red-400 text-xs mt-1">Website must be a valid https:// URL</span>
+                {extractError && <div className="text-red-400 mt-3 sm:mt-4 text-sm sm:text-base">{extractError}</div>}
+              </div>
+            </div>
+          )}
+          {showForm && showUploadBox && extractedPairs.length > 0 && !showFinalSummary && (
+            <div className="w-full px-0 sm:px-2 py-6 flex flex-col items-start justify-center relative min-h-[600px]">
+              <div className="max-w-2xl w-full flex flex-col items-start justify-center">
+                <div className="w-full mb-8">
+                  <h3 className="text-2xl font-bold text-white mb-4">Preview Collection Items</h3>
+                  <div className="flex flex-row gap-3 overflow-x-auto no-scrollbar w-full pb-2 sm:pb-2 mb-8 min-h-[260px]">
+                    {extractedPairs.map(pair => (
+                      <div key={pair.num} className="flex flex-col shadow-lg bg-black w-full max-w-[170px] flex-shrink-0 h-[260px]">
+                        <img src={pair.imgUrl} alt={`NFT ${pair.num}`} className="w-full h-[140px] sm:h-[170px] object-cover rounded-t-2xl" style={{ maxWidth: '600px', borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }} />
+                        <div className="flex flex-col flex-grow items-start px-3 py-2 bg-black w-full border border-[#32CD32] border-t-0 rounded-b-2xl min-h-[70px]">
+                          <div className="font-bold text-white text-xs sm:text-sm truncate w-full">{pair.metadata.name || `#${pair.num}`}</div>
+                          {pair.metadata.description && (
+                            <div className="text-[10px] sm:text-xs text-gray-400 mb-1 w-full truncate">{pair.metadata.description}</div>
+                          )}
+                          {Array.isArray(pair.metadata.attributes) && pair.metadata.attributes.map((attr: any, idx: number) => (
+                            <div key={idx} className="flex flex-row w-full mt-1 items-center text-[10px] sm:text-xs">
+                              <span className="text-[9px] sm:text-[10px] text-gray-400 flex-1 truncate whitespace-nowrap overflow-hidden">{attr.trait_type}</span>
+                              <span className="text-[10px] sm:text-xs text-yellow-300 font-semibold text-right ml-2 break-words truncate whitespace-nowrap overflow-hidden">{String(attr.value)}</span>
+                            </div>
+                          ))}
+                          {!samePrice && (
+                            <div className="mt-2 w-full">
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                className="w-20 sm:w-24 py-1 px-2 rounded border border-[#32CD32] bg-black text-white text-[10px] sm:text-xs focus:outline-none focus:border-yellow-400"
+                                placeholder="Set price (PEPU)"
+                                value={individualPrices[pair.num] || ''}
+                                onChange={e => setIndividualPrices({ ...individualPrices, [pair.num]: e.target.value })}
+                                required
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Pricing section */}
+                  <div className="w-full mt-6 flex flex-col gap-3 items-start">
+                    <div className="flex items-center gap-4">
+                      <span className="text-white font-semibold">Mint Price:</span>
+                    </div>
+                    <div className="flex flex-col gap-1 mt-2">
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        className="w-32 py-2 px-3 rounded border border-[#32CD32] bg-black text-white text-sm focus:outline-none focus:border-yellow-400"
+                        placeholder="1000 PEPU"
+                        value={allPrice}
+                        onChange={e => setAllPrice(e.target.value)}
+                        required
+                      />
+                    </div>
+                    {extractedPairs.length > 0 && (
+                      <span className="text-xs text-green-200 mt-1">Total supply: {extractedPairs.length}</span>
                     )}
-                  </label>
-                  {/* Royalty with validation */}
-                  <label className="flex flex-col gap-2">
-                    <span className="font-semibold text-white">Royalty (%)</span>
-                    <input
-                      type="number"
-                      className="py-3 px-4 rounded-xl border-2 border-[#444] bg-[#181818] text-white focus:outline-none focus:border-[#32CD32] transition-all"
-                      value={royalty}
-                      onChange={handleRoyaltyChange}
-                      placeholder="e.g. 5"
-                      min={0}
-                      max={50}
-                      required
-                    />
-                    <span className="text-xs text-green-300">Max 50%</span>
-                    {royalty && (Number(royalty) > 50) && (
-                      <span className="text-red-400 text-xs mt-1">Royalty cannot exceed 50%</span>
-                    )}
-                  </label>
+                    {/* Start/End date and time pickers */}
+                    <div className="flex flex-col gap-4 mt-4 w-full max-w-xl items-start">
+                      <div className="flex items-center gap-4">
+                        <span className="text-white text-sm font-semibold">Mint Start</span>
+                        <input
+                          type="date"
+                          className="py-2 px-3 rounded border border-[#32CD32] bg-black text-white text-sm focus:outline-none focus:border-yellow-400"
+                          value={startDate}
+                          min={nowISODate}
+                          onChange={e => setStartDate(e.target.value)}
+                          required
+                        />
+                        <input
+                          type="time"
+                          className="py-2 px-3 rounded border border-[#32CD32] bg-black text-white text-sm focus:outline-none focus:border-yellow-400"
+                          value={startTime}
+                          min={startDate === nowISODate ? nowISOTime : undefined}
+                          onChange={e => setStartTime(e.target.value)}
+                          required
+                        />
+                        <span className="text-xs text-gray-400">UTC</span>
+                      </div>
+                      {startDateError && <span className="text-xs text-red-400">{startDateError}</span>}
+                      {startTimeError && <span className="text-xs text-red-400">{startTimeError}</span>}
+                      <div className="flex items-center gap-4">
+                        <span className="text-white text-sm font-semibold">Mint End</span>
+                        <input
+                          type="date"
+                          className="py-2 px-3 rounded border border-[#32CD32] bg-black text-white text-sm focus:outline-none focus:border-yellow-400"
+                          value={endDate}
+                          min={startDate || nowISODate}
+                          onChange={e => setEndDate(e.target.value)}
+                          required
+                        />
+                        <input
+                          type="time"
+                          className="py-2 px-3 rounded border border-[#32CD32] bg-black text-white text-sm focus:outline-none focus:border-yellow-400"
+                          value={endTime}
+                          min={endDate === startDate ? startTime : undefined}
+                          onChange={e => setEndTime(e.target.value)}
+                          required
+                        />
+                        <span className="text-xs text-gray-400">UTC</span>
+                      </div>
+                      {endDateError && <span className="text-xs text-red-400">{endDateError}</span>}
+                      {endTimeError && <span className="text-xs text-red-400">{endTimeError}</span>}
+                    </div>
+                  </div>
                 </div>
                 <div className="flex gap-4 mt-4">
                   <button
                     type="button"
-                    className={`px-6 py-2 bg-[#32CD32] text-black font-bold rounded-full border-2 border-[#32CD32] transition-colors ${(!isFormValid || !isConnected) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-yellow-400 hover:text-black'}`}
-                    onClick={() => isFormValid && isConnected && setShowUploadBox(true)}
-                    disabled={!isFormValid || !isConnected}
+                    className="px-6 py-2 bg-black text-[#32CD32] font-bold rounded-full border-2 border-[#32CD32] hover:bg-[#222] transition-colors"
+                    onClick={() => { setExtractedPairs([]); setZipFile(null); }}
                   >
-                    Next
+                    Back
                   </button>
                   <button
                     type="button"
-                    className="px-6 py-2 bg-black text-[#32CD32] font-bold rounded-full border-2 border-[#32CD32] hover:bg-[#222] transition-colors"
-                    onClick={() => setShowForm(false)}
+                    className={`px-6 py-2 bg-[#32CD32] text-black font-bold rounded-full border-2 border-[#32CD32] transition-colors ${(!isMintPriceValid || !isDateTimeValid) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-yellow-400 hover:text-black'}`}
+                    onClick={() => (isMintPriceValid && isDateTimeValid) && setShowFinalSummary(true)}
+                    disabled={!isMintPriceValid || !isDateTimeValid}
                   >
-                    Cancel
+                    Next
                   </button>
                 </div>
-              </form>
-            </div>
-          </div>
-        )}
-        {showForm && showUploadBox && extractedPairs.length === 0 && (
-          <div className="w-full max-w-5xl mx-auto px-4 py-12 flex flex-col items-start justify-center">
-            <div className="max-w-2xl w-full flex flex-col items-start justify-center">
-              <label htmlFor="zip-upload-input" className="w-full border-2 border-dashed border-[#32CD32] rounded-2xl bg-gradient-to-br from-[#181818] via-[#232323] to-[#181818] flex flex-col items-center justify-center py-24 cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-200 shadow-lg">
-                <FaCloudUploadAlt className="mb-8" style={{ fontSize: 96, color: '#e5e7eb' }} />
-                <span className="text-3xl font-extrabold text-white mb-3">Upload your collection folder</span>
-                <span className="text-lg text-green-200 mb-4 font-medium">with image and metadata (ZIP file)</span>
-                <input
-                  id="zip-upload-input"
-                  type="file"
-                  accept=".zip"
-                  className="hidden"
-                  onChange={e => {
-                    setZipFile(e.target.files && e.target.files[0] ? e.target.files[0] : null);
-                    setExtractedPairs([]);
-                    setExtractError('');
-                    setIsExtracting(false);
-                  }}
-                />
-                {zipFile && (
-                  <span className="mt-4 text-green-300 font-semibold">Selected: {zipFile.name}</span>
-                )}
-              </label>
-              <div className="flex gap-4 mt-8">
-                <button
-                  type="button"
-                  className="px-6 py-2 bg-black text-[#32CD32] font-bold rounded-full border-2 border-[#32CD32] hover:bg-[#222] transition-colors"
-                  onClick={() => setShowUploadBox(false)}
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  className="px-6 py-2 bg-[#32CD32] text-black font-bold rounded-full border-2 border-[#32CD32] hover:bg-yellow-400 hover:text-black transition-colors"
-                  onClick={handleExtractZip}
-                  disabled={!zipFile || isExtracting}
-                >
-                  {isExtracting ? 'Extracting...' : 'Next'}
-                </button>
               </div>
-              {extractError && <div className="text-red-400 mt-4">{extractError}</div>}
-            </div>
-          </div>
-        )}
-        {showForm && showUploadBox && extractedPairs.length > 0 && !showFinalSummary && (
-          <div className="w-full max-w-5xl mx-auto px-4 py-12 flex flex-col items-start justify-center relative min-h-[600px]">
-            <div className="max-w-2xl w-full flex flex-col items-start justify-center">
-              <div className="w-full mb-8">
-                <h3 className="text-2xl font-bold text-white mb-4">Preview Collection Items</h3>
-                <div className="flex flex-row gap-3 overflow-x-auto no-scrollbar w-full pb-2">
-                  {extractedPairs.map(pair => (
-                    <div key={pair.num} className="flex flex-col overflow-hidden shadow-lg bg-black w-full max-w-[170px] flex-shrink-0">
-                      <img src={pair.imgUrl} alt={`NFT ${pair.num}`} className="w-full h-[150px] object-cover" style={{ maxWidth: '600px', maxHeight: '600px', borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }} />
-                      <div className="flex flex-col items-start px-3 py-2 bg-black w-full border border-[#32CD32] border-t-0 rounded-b-2xl">
-                        <div className="font-bold text-white text-sm truncate w-full">{pair.metadata.name || `#${pair.num}`}</div>
-                        {pair.metadata.description && (
-                          <div className="text-xs text-gray-400 mb-1 w-full truncate">{pair.metadata.description}</div>
-                        )}
-                        {Array.isArray(pair.metadata.attributes) && pair.metadata.attributes.map((attr: any, idx: number) => (
-                          <div key={idx} className="flex flex-row w-full mt-1 items-center text-xs">
-                            <span className="text-[10px] text-gray-400 flex-1 truncate whitespace-nowrap overflow-hidden">{attr.trait_type}</span>
-                            <span className="text-xs text-yellow-300 font-semibold text-right ml-2 break-words truncate whitespace-nowrap overflow-hidden">{String(attr.value)}</span>
-                          </div>
-                        ))}
-                        {!samePrice && (
-                          <div className="mt-2 w-full">
-                            <input
-                              type="number"
-                              min="0"
-                              step="any"
-                              className="w-24 py-1 px-2 rounded border border-[#32CD32] bg-black text-white text-xs focus:outline-none focus:border-yellow-400"
-                              placeholder="Set price (PEPU)"
-                              value={individualPrices[pair.num] || ''}
-                              onChange={e => setIndividualPrices({ ...individualPrices, [pair.num]: e.target.value })}
-                              required
-                            />
-                          </div>
-                        )}
-                      </div>
+              {/* Fees & Launch Guide link at bottom right, opens modal */}
+              <button onClick={() => setShowFeesModal(true)} className="absolute right-4 bottom-4 text-[#32CD32] underline text-sm hover:text-yellow-300 transition-colors z-20">Fees & Launch Guide</button>
+              {showFeesModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+                  <div className="bg-[#181818] border-2 border-[#32CD32] rounded-2xl p-6 w-full max-w-lg shadow-2xl relative flex flex-col gap-4">
+                    <button onClick={() => setShowFeesModal(false)} className="absolute top-3 right-4 text-[#32CD32] text-xl font-bold hover:text-yellow-300">&times;</button>
+                    <h2 className="text-2xl font-extrabold text-yellow-300 mb-2">Lilipad Launch Fees</h2>
+                    <div className="text-green-200 font-semibold">Launching a collection on Lilipad requires:</div>
+                    <ul className="list-disc list-inside text-green-100 text-base ml-4">
+                      <li><span className="font-bold text-yellow-300">$10</span> (in PEPU) one-time launch fee</li>
+                      <li><span className="font-bold text-yellow-300">5%</span> of the total mint price of all NFTs in your collection</li>
+                    </ul>
+                    <div className="mt-2 text-green-100 text-base">
+                      <span className="font-bold text-[#32CD32]">Example:</span><br/>
+                      If you launch a collection with <span className="font-bold">100 NFTs</span> and set the mint price to <span className="font-bold">500 PEPU</span> each:<br/>
+                      <span className="ml-4">• Launch fee: <span className="font-bold text-yellow-300">$10</span> (in PEPU)</span><br/>
+                      <span className="ml-4">• 5% of total mint: <span className="font-bold text-yellow-300">5% × (100 × 500 PEPU) = 2,500 PEPU</span></span><br/>
+                      <span className="ml-4">• <span className="font-bold text-green-200">Total paid: $10 (in PEPU) + 2,500 PEPU</span></span>
                     </div>
-                  ))}
+                    <div className="mt-2 text-xs text-gray-400">Fees are required to help support the platform and ensure a high-quality experience for all creators and collectors.</div>
+                  </div>
                 </div>
-                {/* Pricing section */}
-                <div className="w-full mt-6 flex flex-col gap-3 items-start">
-                  <div className="flex items-center gap-4">
-                    <span className="text-white font-semibold">Mint Price:</span>
-                  </div>
-                  <div className="flex flex-col gap-1 mt-2">
-                    <input
-                      type="number"
-                      min="0"
-                      step="any"
-                      className="w-32 py-2 px-3 rounded border border-[#32CD32] bg-black text-white text-sm focus:outline-none focus:border-yellow-400"
-                      placeholder="1000 PEPU"
-                      value={allPrice}
-                      onChange={e => setAllPrice(e.target.value)}
-                      required
-                    />
-                  </div>
-                  {extractedPairs.length > 0 && (
-                    <span className="text-xs text-green-200 mt-1">Total supply: {extractedPairs.length}</span>
+              )}
+            </div>
+          )}
+          {/* Final summary section */}
+          {showForm && showUploadBox && showFinalSummary && (
+            <div className="w-full min-h-[70vh] flex flex-col justify-start items-start bg-black relative">
+              {/* Big rectangular banner image with thinner green border, left-aligned, responsive */}
+              {bannerPreview && (
+                <div className="w-full max-w-5xl mx-auto flex justify-start items-center mt-6 px-2 sm:px-4">
+                  <img src={bannerPreview} alt="Banner" className="w-full sm:w-[600px] h-[180px] sm:h-[320px] object-cover rounded-2xl border-2 border-[#32CD32] bg-black" />
+                </div>
+              )}
+              {/* Info below image, left-aligned, compact spacing and smaller text, responsive */}
+              <div className="w-full max-w-5xl mx-auto flex flex-col gap-2 px-2 sm:px-4 pt-4">
+                <h2 className="text-xl sm:text-2xl font-extrabold text-yellow-300 leading-tight mb-1">{collectionName}</h2>
+                <div className="flex flex-row gap-2 flex-wrap mb-1">
+                  {username && (
+                    <a href={`https://x.com/${username.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#223] text-white text-xs sm:text-sm font-semibold hover:bg-[#32CD32] hover:text-black transition-colors">
+                      <svg width="14" height="14" fill="currentColor" viewBox="0 0 1200 1227"><path d="M1152.6 0H885.2L600.3 418.6 315.4 0H47.9l404.7 610.6L0 1227h267.4l285.2-418.6 285.2 418.6h267.4L795.2 610.6zM600.3 753.2L385.7 1087.2H814.9z"/></svg>
+                      <span className="truncate">@{username.replace(/^@/, '')}</span>
+                    </a>
                   )}
-                  {/* Start/End date and time pickers */}
-                  <div className="flex flex-col gap-4 mt-4 w-full max-w-xl items-start">
-                    <div className="flex items-center gap-4">
-                      <span className="text-white text-sm font-semibold">Mint Start</span>
-                      <input
-                        type="date"
-                        className="py-2 px-3 rounded border border-[#32CD32] bg-black text-white text-sm focus:outline-none focus:border-yellow-400"
-                        value={startDate}
-                        min={nowISODate}
-                        onChange={e => setStartDate(e.target.value)}
-                        required
-                      />
-                      <input
-                        type="time"
-                        className="py-2 px-3 rounded border border-[#32CD32] bg-black text-white text-sm focus:outline-none focus:border-yellow-400"
-                        value={startTime}
-                        min={startDate === nowISODate ? nowISOTime : undefined}
-                        onChange={e => setStartTime(e.target.value)}
-                        required
-                      />
-                      <span className="text-xs text-gray-400">UTC</span>
+                  {website && (
+                    <a href={website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#223] text-white text-xs sm:text-sm font-semibold hover:bg-[#32CD32] hover:text-black transition-colors">
+                      <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 1.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17zm0 2a6.5 6.5 0 0 0 0 13 6.5 6.5 0 0 0 0-13zm0 1.5a5 5 0 1 1 0 10 5 5 0 0 1 0-10z"/></svg>
+                      <span className="truncate">{website.replace(/^https?:\/\//, '')}</span>
+                    </a>
+                  )}
+                  {instagram && (
+                    <a href={`https://instagram.com/${instagram.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#223] text-white text-xs sm:text-sm font-semibold hover:bg-[#32CD32] hover:text-black transition-colors">
+                      <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5A4.25 4.25 0 0 0 20.5 16.25v-8.5A4.25 4.25 0 0 0 16.25 3.5h-8.5zm4.25 2.25a6.25 6.25 0 1 1 0 12.5 6.25 6.25 0 0 1 0-12.5zm0 1.5a4.75 4.75 0 1 0 0 9.5 4.75 4.75 0 0 0 0-9.5zm6.25 1.25a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg>
+                      <span className="truncate">@{instagram.replace(/^@/, '')}</span>
+                    </a>
+                  )}
+                </div>
+                <div className="text-green-100 text-xs sm:text-sm font-medium truncate max-w-full sm:max-w-2xl mb-1">{collectionDesc}</div>
+                {/* Stats row in a pill-like container, left-aligned, horizontal pill, vertical stat layout */}
+                <div className="w-full mb-2">
+                  <div className="inline-flex flex-row gap-2 sm:gap-6 items-start bg-[#232323] border border-[#32CD32] rounded-xl px-2 sm:px-3 py-2 max-w-full">
+                    <div className="flex flex-col items-start min-w-[70px]">
+                      <span className="text-[10px] sm:text-[11px] font-bold text-[#32CD32] uppercase tracking-widest mb-0.5">Mint Price</span>
+                      <span className="text-sm sm:text-base font-mono font-bold text-white">{allPrice || '—'} <span className="text-xs text-green-200">PEPU</span></span>
                     </div>
-                    {startDateError && <span className="text-xs text-red-400">{startDateError}</span>}
-                    {startTimeError && <span className="text-xs text-red-400">{startTimeError}</span>}
-                    <div className="flex items-center gap-4">
-                      <span className="text-white text-sm font-semibold">Mint End</span>
-                      <input
-                        type="date"
-                        className="py-2 px-3 rounded border border-[#32CD32] bg-black text-white text-sm focus:outline-none focus:border-yellow-400"
-                        value={endDate}
-                        min={startDate || nowISODate}
-                        onChange={e => setEndDate(e.target.value)}
-                        required
-                      />
-                      <input
-                        type="time"
-                        className="py-2 px-3 rounded border border-[#32CD32] bg-black text-white text-sm focus:outline-none focus:border-yellow-400"
-                        value={endTime}
-                        min={endDate === startDate ? startTime : undefined}
-                        onChange={e => setEndTime(e.target.value)}
-                        required
-                      />
-                      <span className="text-xs text-gray-400">UTC</span>
+                    <div className="flex flex-col items-start min-w-[70px]">
+                      <span className="text-[10px] sm:text-[11px] font-bold text-[#32CD32] uppercase tracking-widest mb-0.5">Total Supply</span>
+                      <span className="text-sm sm:text-base font-mono font-bold text-white">{extractedPairs.length}</span>
                     </div>
-                    {endDateError && <span className="text-xs text-red-400">{endDateError}</span>}
-                    {endTimeError && <span className="text-xs text-red-400">{endTimeError}</span>}
+                    <div className="flex flex-col items-start min-w-[70px]">
+                      <span className="text-[10px] sm:text-[11px] font-bold text-[#32CD32] uppercase tracking-widest mb-0.5">Royalty</span>
+                      <span className="text-sm sm:text-base font-mono font-bold text-white">{royalty}%</span>
+                    </div>
+                    <div className="flex flex-col items-start min-w-[70px]">
+                      <span className="text-[10px] sm:text-[11px] font-bold text-[#32CD32] uppercase tracking-widest mb-0.5">Mint Starts In</span>
+                      {(() => {
+                        const now = new Date();
+                        const start = mintStartISO ? new Date(mintStartISO) : null;
+                        const end = mintEndISO ? new Date(mintEndISO) : null;
+                        if (start && now < start) {
+                          // Calculate days, hours, minutes
+                          const diff = start.getTime() - now.getTime();
+                          const days = Math.floor(diff / 1000 / 60 / 60 / 24);
+                          const hours = Math.floor((diff / 1000 / 60 / 60) % 24);
+                          const mins = Math.floor((diff / 1000 / 60) % 60);
+                          // On mobile, show only the largest nonzero unit
+                          return (
+                            <button className="h-8 sm:h-9 min-w-[64px] sm:min-w-[80px] flex items-center justify-center bg-yellow-400 text-black font-bold border-2 border-yellow-400 rounded hover:bg-yellow-300 transition-colors text-xs sm:text-sm cursor-default mt-0.5 px-2" disabled>
+                                <span className="block sm:hidden">
+                                  {days > 0 ? `${days}d` : hours > 0 ? `${hours}h` : `${mins}m`}
+                                </span>
+                                <span className="hidden sm:block">
+                                  {days > 0 ? `${days}d ` : ''}{hours}h {mins}m
+                                </span>
+                              </button>
+                          );
+                        } else if (start && end && now >= start && now <= end) {
+                          return <button className="h-8 sm:h-9 min-w-[64px] sm:min-w-[80px] flex items-center justify-center bg-yellow-400 text-black font-bold border-2 border-yellow-400 rounded hover:bg-yellow-300 transition-colors text-xs sm:text-sm mt-0.5 px-2">Mint</button>;
+                        } else if (end && now > end) {
+                          return <span className="text-red-400 font-bold text-xs sm:text-sm mt-0.5">Minting ended</span>;
+                        } else {
+                          return null;
+                        }
+                      })()}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex gap-4 mt-4">
-                <button
-                  type="button"
-                  className="px-6 py-2 bg-black text-[#32CD32] font-bold rounded-full border-2 border-[#32CD32] hover:bg-[#222] transition-colors"
-                  onClick={() => { setExtractedPairs([]); setZipFile(null); }}
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  className={`px-6 py-2 bg-[#32CD32] text-black font-bold rounded-full border-2 border-[#32CD32] transition-colors ${(!isMintPriceValid || !isDateTimeValid) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-yellow-400 hover:text-black'}`}
-                  onClick={() => (isMintPriceValid && isDateTimeValid) && setShowFinalSummary(true)}
-                  disabled={!isMintPriceValid || !isDateTimeValid}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-            {/* Fees & Launch Guide link at bottom right, opens modal */}
-            <button onClick={() => setShowFeesModal(true)} className="absolute right-4 bottom-4 text-[#32CD32] underline text-sm hover:text-yellow-300 transition-colors z-20">Fees & Launch Guide</button>
-            {showFeesModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-                <div className="bg-[#181818] border-2 border-[#32CD32] rounded-2xl p-6 w-full max-w-lg shadow-2xl relative flex flex-col gap-4">
-                  <button onClick={() => setShowFeesModal(false)} className="absolute top-3 right-4 text-[#32CD32] text-xl font-bold hover:text-yellow-300">&times;</button>
-                  <h2 className="text-2xl font-extrabold text-yellow-300 mb-2">Lilipad Launch Fees</h2>
-                  <div className="text-green-200 font-semibold">Launching a collection on Lilipad requires:</div>
-                  <ul className="list-disc list-inside text-green-100 text-base ml-4">
-                    <li><span className="font-bold text-yellow-300">$10</span> (in PEPU) one-time launch fee</li>
-                    <li><span className="font-bold text-yellow-300">5%</span> of the total mint price of all NFTs in your collection</li>
-                  </ul>
-                  <div className="mt-2 text-green-100 text-base">
-                    <span className="font-bold text-[#32CD32]">Example:</span><br/>
-                    If you launch a collection with <span className="font-bold">100 NFTs</span> and set the mint price to <span className="font-bold">500 PEPU</span> each:<br/>
-                    <span className="ml-4">• Launch fee: <span className="font-bold text-yellow-300">$10</span> (in PEPU)</span><br/>
-                    <span className="ml-4">• 5% of total mint: <span className="font-bold text-yellow-300">5% × (100 × 500 PEPU) = 2,500 PEPU</span></span><br/>
-                    <span className="ml-4">• <span className="font-bold text-green-200">Total paid: $10 (in PEPU) + 2,500 PEPU</span></span>
-                  </div>
-                  <div className="mt-2 text-xs text-gray-400">Fees are required to help support the platform and ensure a high-quality experience for all creators and collectors.</div>
+                {/* Back button, left-aligned, responsive */}
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-3 w-full">
+                  <button
+                    type="button"
+                    className="px-4 sm:px-5 py-1.5 bg-black text-[#32CD32] font-bold rounded-full border-2 border-[#32CD32] hover:bg-[#222] transition-colors text-xs sm:text-sm"
+                    onClick={() => setShowFinalSummary(false)}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-4 sm:px-5 py-1.5 bg-yellow-400 text-black font-bold rounded-full border-2 border-yellow-400 hover:bg-yellow-300 transition-colors text-xs sm:text-sm ${launching ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={handleLaunch}
+                    disabled={launching}
+                  >
+                    {launching ? 'Launching...' : 'Launch'}
+                  </button>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-        {/* Final summary section */}
-        {showForm && showUploadBox && showFinalSummary && (
-          <div className="w-full min-h-[70vh] flex flex-col justify-start items-start bg-black relative">
-            {/* Big rectangular banner image with thinner green border, left-aligned */}
-            {bannerPreview && (
-              <div className="w-full max-w-5xl mx-auto flex justify-start items-center mt-6 px-4">
-                <img src={bannerPreview} alt="Banner" className="w-[600px] h-[320px] object-cover rounded-2xl border-2 border-[#32CD32] bg-black" />
-              </div>
-            )}
-            {/* Info below image, left-aligned, compact spacing and smaller text */}
-            <div className="w-full max-w-5xl mx-auto flex flex-col gap-2 px-4 pt-4">
-              <h2 className="text-2xl font-extrabold text-yellow-300 leading-tight mb-1">{collectionName}</h2>
-              <div className="flex flex-row gap-2 flex-wrap mb-1">
-                {username && (
-                  <a href={`https://x.com/${username.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#223] text-white text-sm font-semibold hover:bg-[#32CD32] hover:text-black transition-colors">
-                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 1200 1227"><path d="M1152.6 0H885.2L600.3 418.6 315.4 0H47.9l404.7 610.6L0 1227h267.4l285.2-418.6 285.2 418.6h267.4L795.2 610.6zM600.3 753.2L385.7 1087.2H814.9z"/></svg>
-                    <span className="truncate">@{username.replace(/^@/, '')}</span>
-                  </a>
-                )}
-                {website && (
-                  <a href={website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#223] text-white text-sm font-semibold hover:bg-[#32CD32] hover:text-black transition-colors">
-                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 1.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17zm0 2a6.5 6.5 0 0 0 0 13 6.5 6.5 0 0 0 0-13zm0 1.5a5 5 0 1 1 0 10 5 5 0 0 1 0-10z"/></svg>
-                    <span className="truncate">{website.replace(/^https?:\/\//, '')}</span>
-                  </a>
-                )}
-                {instagram && (
-                  <a href={`https://instagram.com/${instagram.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#223] text-white text-sm font-semibold hover:bg-[#32CD32] hover:text-black transition-colors">
-                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5A4.25 4.25 0 0 0 20.5 16.25v-8.5A4.25 4.25 0 0 0 16.25 3.5h-8.5zm4.25 2.25a6.25 6.25 0 1 1 0 12.5 6.25 6.25 0 0 1 0-12.5zm0 1.5a4.75 4.75 0 1 0 0 9.5 4.75 4.75 0 0 0 0-9.5zm6.25 1.25a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg>
-                    <span className="truncate">@{instagram.replace(/^@/, '')}</span>
-                  </a>
-                )}
-              </div>
-              <div className="text-green-100 text-sm font-medium truncate max-w-2xl mb-1">{collectionDesc}</div>
-              {/* Stats row */}
-              <div className="flex flex-row gap-6 items-center mb-1">
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-[#32CD32] uppercase tracking-widest mb-0.5">Mint Price</span>
-                  <span className="text-base font-mono font-bold text-white">{allPrice || '—'} <span className="text-xs text-green-200">PEPU</span></span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-[#32CD32] uppercase tracking-widest mb-0.5">Total Supply</span>
-                  <span className="text-base font-mono font-bold text-white">{extractedPairs.length}</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-[#32CD32] uppercase tracking-widest mb-0.5">Royalty</span>
-                  <span className="text-base font-mono font-bold text-white">{royalty}%</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-[#32CD32] uppercase tracking-widest mb-0.5">Mint Starts In</span>
-                  {(() => {
-                    const now = new Date();
-                    const start = mintStartISO ? new Date(mintStartISO) : null;
-                    const end = mintEndISO ? new Date(mintEndISO) : null;
-                    if (start && now < start) {
-                      return (
-                        <button className="flex items-center gap-2 px-3 py-1 bg-yellow-400 text-black font-bold rounded-full border-2 border-yellow-400 hover:bg-yellow-300 transition-colors text-sm cursor-default mt-0.5" disabled>
-                          <svg className="animate-spin mr-1" width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#000" strokeWidth="4" opacity="0.2"/><path d="M4 12a8 8 0 018-8" stroke="#000" strokeWidth="4" strokeLinecap="round"/></svg>
-                          {countdown}
-                        </button>
-                      );
-                    } else if (start && end && now >= start && now <= end) {
-                      return <button className="px-3 py-1 bg-yellow-400 text-black font-bold rounded-full border-2 border-yellow-400 hover:bg-yellow-300 transition-colors text-sm mt-0.5">Mint</button>;
-                    } else if (end && now > end) {
-                      return <span className="text-red-400 font-bold text-sm mt-0.5">Minting ended</span>;
-                    } else {
-                      return null;
-                    }
-                  })()}
-                </div>
-              </div>
-              {/* Back button, left-aligned */}
-              <div className="flex gap-4 mt-3">
-                <button
-                  type="button"
-                  className="px-5 py-1.5 bg-black text-[#32CD32] font-bold rounded-full border-2 border-[#32CD32] hover:bg-[#222] transition-colors text-sm"
-                  onClick={() => setShowFinalSummary(false)}
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  className={`px-5 py-1.5 bg-yellow-400 text-black font-bold rounded-full border-2 border-yellow-400 hover:bg-yellow-300 transition-colors text-sm ${launching ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  onClick={handleLaunch}
-                  disabled={launching}
-                >
-                  {launching ? 'Launching...' : 'Launch'}
-                </button>
-              </div>
             </div>
           </div>
-        )}
-    
+          )}
       </div>
       {showProgressModal && (
         <>
           <div className="fixed inset-0 z-50 bg-black bg-opacity-20" style={{ pointerEvents: 'all', backdropFilter: 'blur(1px)', backgroundColor: 'rgba(0,0,0,0.2)' }}></div>
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="bg-[#181818] border border-[#32CD32] rounded-xl shadow-lg max-w-[400px] w-full max-h-[85vh] overflow-y-auto flex flex-col items-center relative p-0 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              <div className="text-yellow-400 text-center font-bold text-sm w-full mb-2 mt-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-2 sm:px-0">
+            <div className="bg-[#181818] border border-[#32CD32] rounded-xl shadow-lg max-w-full sm:max-w-[400px] w-full max-h-[90vh] overflow-y-auto flex flex-col items-center relative p-0 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div className="text-yellow-400 text-center font-bold text-xs sm:text-sm w-full mb-2 mt-4 px-2">
                 ⚠️ Do not close this modal or navigate away until the process is complete.
               </div>
               {/* Close button only when successful */}
@@ -970,8 +981,8 @@ export default function CreatePage() {
                   ×
                 </button>
               )}
-              <div className="w-full px-6 pt-6 pb-2 flex flex-col items-center">
-                <h2 className="text-lg font-bold text-white mb-2 tracking-wide">Launching Collection</h2>
+              <div className="w-full px-2 sm:px-6 pt-6 pb-2 flex flex-col items-center">
+                <h2 className="text-base sm:text-lg font-bold text-white mb-2 tracking-wide">Launching Collection</h2>
                 <div className="w-full bg-[#222] rounded-full h-1.5 mb-4">
                   <div
                     className="bg-[#32CD32] h-1.5 rounded-full transition-all duration-300"
@@ -980,7 +991,7 @@ export default function CreatePage() {
                 </div>
                 <ul className="w-full mb-2 flex flex-col gap-1">
                   {progressSteps.map((step, idx) => (
-                    <li key={step} className={`flex items-center gap-2 text-sm ${idx === progressStep ? 'font-bold text-white' : idx < progressStep ? 'text-green-400' : 'text-gray-400'}`}>
+                    <li key={step} className={`flex items-center gap-2 text-xs sm:text-sm ${idx === progressStep ? 'font-bold text-white' : idx < progressStep ? 'text-green-400' : 'text-gray-400'}`}> 
                       {idx < progressStep && <span className="inline-block w-3 h-3 bg-[#32CD32] rounded-full flex items-center justify-center">✓</span>}
                       {idx === progressStep && <Spinner />}
                       {idx > progressStep && <span className="inline-block w-3 h-3 border border-gray-400 rounded-full"></span>}
@@ -989,19 +1000,19 @@ export default function CreatePage() {
                   ))}
                 </ul>
                 {progressError && (
-                  <div className="text-red-400 font-semibold mt-2 text-center w-full">{progressError}</div>
+                  <div className="text-red-400 font-semibold mt-2 text-center w-full text-xs sm:text-sm">{progressError}</div>
                 )}
               </div>
               {!progressError && progressStep === progressSteps.length - 1 && launchResult && (
                 <>
                   <div className="w-full border-t border-[#32CD32] my-2"></div>
-                  <div className="w-full px-6 pb-6 flex flex-col gap-2 items-start">
-                    <div className="text-green-400 font-semibold mb-1 text-base">Launch Successful!</div>
+                  <div className="w-full px-2 sm:px-6 pb-6 flex flex-col gap-2 items-start">
+                    <div className="text-green-400 font-semibold mb-1 text-sm sm:text-base">Launch Successful!</div>
                     {launchResult.collectionImageCid && (
                       <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
                         <div className="text-xs text-[#32CD32] font-semibold mb-0.5">Collection Image CID</div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.collectionImageCid}</span>
+                          <span className="font-mono text-xs break-all text-white truncate max-w-[90px] sm:max-w-[140px]">{launchResult.collectionImageCid}</span>
                           <a href={launchResult.collectionImageCid.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/')} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View</a>
                           <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionImageCid || '')}>Copy</button>
                         </div>
@@ -1011,7 +1022,7 @@ export default function CreatePage() {
                       <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#FFD700]">
                         <div className="text-xs text-[#FFD700] font-semibold mb-0.5">Collection Banner CID</div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.collectionImageCid}</span>
+                          <span className="font-mono text-xs break-all text-white truncate max-w-[90px] sm:max-w-[140px]">{launchResult.collectionImageCid}</span>
                           <a href={launchResult.collectionImageCid.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/')} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#FFD700] underline">View</a>
                           <button className="ml-1 text-xs text-[#FFD700] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionImageCid || '')}>Copy</button>
                         </div>
@@ -1021,7 +1032,7 @@ export default function CreatePage() {
                       <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
                         <div className="text-xs text-[#32CD32] font-semibold mb-0.5">NFT Metadata Folder CID</div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.metadataFolderCID}</span>
+                          <span className="font-mono text-xs break-all text-white truncate max-w-[90px] sm:max-w-[140px]">{launchResult.metadataFolderCID}</span>
                           <a href={launchResult.metadataFolderCID.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/') + '/0.json'} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View 0.json</a>
                           <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.metadataFolderCID || '')}>Copy</button>
                         </div>
@@ -1031,7 +1042,7 @@ export default function CreatePage() {
                       <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
                         <div className="text-xs text-[#32CD32] font-semibold mb-0.5">Images Folder CID</div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.imagesFolderCID}</span>
+                          <span className="font-mono text-xs break-all text-white truncate max-w-[90px] sm:max-w-[140px]">{launchResult.imagesFolderCID}</span>
                           <a href={launchResult.imagesFolderCID.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/') + '/0.png'} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View 0.png</a>
                           <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.imagesFolderCID || '')}>Copy</button>
                         </div>
@@ -1041,7 +1052,7 @@ export default function CreatePage() {
                       <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
                         <div className="text-xs text-[#32CD32] font-semibold mb-0.5">Collection Metadata CID</div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.collectionMetadataCid}</span>
+                          <span className="font-mono text-xs break-all text-white truncate max-w-[90px] sm:max-w-[140px]">{launchResult.collectionMetadataCid}</span>
                           <a href={launchResult.collectionMetadataCid.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/')} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View</a>
                           <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionMetadataCid || '')}>Copy</button>
                         </div>
