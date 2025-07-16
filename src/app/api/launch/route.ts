@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import lighthouse from '@lighthouse-web3/sdk';
-import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
 export const config = {
   api: {
@@ -12,24 +12,24 @@ export const config = {
 
 const API_KEY = process.env.LIGHTHOUSE_API_KEY;
 
-async function parseForm(req: NextRequest) {
-  return new Promise((resolve, reject) => {
-    const form = formidable({ multiples: true });
-    form.parse(req, (err, fields, files) => {
-      if (err) reject(err);
-      else resolve({ fields, files });
-    });
-  });
+// Helper to save uploaded files to a temp dir, preserving relative paths but stripping leading folder prefix
+async function saveUploadedDirFromFormData(files: File[], tempDir: string) {
+  for (const file of files) {
+    // Use webkitRelativePath or fallback to file.name
+    let relPath = (file as any).webkitRelativePath || file.name;
+    // Remove any leading folder prefix (e.g., 'metadata/', 'images/')
+    relPath = relPath.replace(/^.*metadata[\\/]/i, '').replace(/^.*images[\\/]/i, '');
+    const filePath = path.join(tempDir, relPath);
+    const dir = path.dirname(filePath);
+    fs.mkdirSync(dir, { recursive: true });
+    const buffer = Buffer.from(await file.arrayBuffer());
+    fs.writeFileSync(filePath, buffer);
+  }
 }
 
-async function uploadFile(filePath: string) {
-  const response = await lighthouse.upload(filePath, API_KEY!);
-  return response.data.Hash;
-}
-
-async function uploadText(text: string, name: string) {
-  const response = await lighthouse.uploadText(text, API_KEY!, name);
-  return response.data.Hash;
+// Helper to sanitize collection name for folder naming
+function sanitizeName(name: string) {
+  return name.toLowerCase().replace(/[^a-z0-9\-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 }
 
 export async function POST(req: Request) {
@@ -38,65 +38,66 @@ export async function POST(req: Request) {
   }
 
   try {
-    // Parse form data
     const formData = await req.formData();
-    // Expect: collectionImage (File), images (File[]), metadata (stringified JSON[]), collectionInfo (stringified JSON)
-    const collectionImage = formData.get('collectionImage') as File;
-    const images = formData.getAll('images') as File[];
-    const metadataList = JSON.parse(formData.get('metadata') as string) as any[];
-    const collectionInfo = JSON.parse(formData.get('collectionInfo') as string);
+    const uploadType = formData.get('uploadType');
+    const collectionInfo = formData.get('collectionInfo') ? JSON.parse(formData.get('collectionInfo') as string) : null;
+    const sanitizedCollectionName = collectionInfo?.name ? sanitizeName(collectionInfo.name) : 'collection';
 
-    // 1. Upload collection image
-    const collectionImageBuffer = Buffer.from(await collectionImage.arrayBuffer());
-    const collectionImagePath = `/tmp/${collectionImage.name}`;
-    fs.writeFileSync(collectionImagePath, collectionImageBuffer);
-    const collectionImageCid = await uploadFile(collectionImagePath);
-    fs.unlinkSync(collectionImagePath);
+    if (uploadType === 'images') {
+      // Handle images folder upload
+      const images = formData.getAll('images') as File[];
+      const imagesTempDir = path.join(os.tmpdir(), `${sanitizedCollectionName}-images`);
+      fs.mkdirSync(imagesTempDir, { recursive: true });
+      await saveUploadedDirFromFormData(images, imagesTempDir);
+      const imagesFolderRes = await lighthouse.upload(imagesTempDir, API_KEY!);
+      const imagesFolderCID = imagesFolderRes.data.Hash;
+      fs.rmSync(imagesTempDir, { recursive: true, force: true });
+      return NextResponse.json({ imagesFolderCID: `ipfs://${imagesFolderCID}` });
+    } else if (uploadType === 'metadata') {
+      // Handle metadata folder upload and update
+      const metadataFiles = formData.getAll('metadata') as File[];
+      const collectionImage = formData.get('collectionImage') as File | null;
+      const imagesFolderCID = (formData.get('imagesFolderCID') as string || '').replace('ipfs://', '');
 
-    // 2. Upload NFT images
-    const imageCids: Record<string, string> = {};
-    for (const img of images) {
-      const imgBuffer = Buffer.from(await img.arrayBuffer());
-      const imgPath = `/tmp/${img.name}`;
-      fs.writeFileSync(imgPath, imgBuffer);
-      const cid = await uploadFile(imgPath);
-      imageCids[img.name] = `ipfs://${cid}`;
-      fs.unlinkSync(imgPath);
+      const metadataTempDir = path.join(os.tmpdir(), `${sanitizedCollectionName}-metadata`);
+      fs.mkdirSync(metadataTempDir, { recursive: true });
+      await saveUploadedDirFromFormData(metadataFiles, metadataTempDir);
+
+      // Update each .json file's image field to use the gateway URL
+      if (imagesFolderCID) {
+        const files = fs.readdirSync(metadataTempDir);
+        for (const file of files) {
+          if (!file.endsWith('.json')) continue;
+          const metaPath = path.join(metadataTempDir, file);
+          const meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+          const num = file.replace('.json', '');
+          meta.image = `https://gateway.lighthouse.storage/ipfs/${imagesFolderCID}/${num}.png`;
+          fs.writeFileSync(metaPath, JSON.stringify(meta));
+        }
+      }
+
+      // Optionally upload collection image
+      let collectionImageCid = '';
+      if (collectionImage) {
+        const collectionImageBuffer = Buffer.from(await collectionImage.arrayBuffer());
+        const collectionImagePath = path.join(os.tmpdir(), collectionImage.name);
+        fs.writeFileSync(collectionImagePath, collectionImageBuffer);
+        const imgRes = await lighthouse.upload(collectionImagePath, API_KEY!);
+        collectionImageCid = imgRes.data.Hash;
+        fs.unlinkSync(collectionImagePath);
+      }
+
+      // Upload updated metadata folder to IPFS
+      const metadataFolderRes = await lighthouse.upload(metadataTempDir, API_KEY!);
+      const metadataFolderCID = metadataFolderRes.data.Hash;
+      fs.rmSync(metadataTempDir, { recursive: true, force: true });
+      return NextResponse.json({
+        metadataFolderCID: `ipfs://${metadataFolderCID}`,
+        collectionImageCid: collectionImageCid ? `ipfs://${collectionImageCid}` : '',
+      });
+    } else {
+      return NextResponse.json({ error: 'Invalid uploadType' }, { status: 400 });
     }
-
-    // 3. Update NFT metadata and upload
-    const updatedMetadataCids: Record<string, string> = {};
-    for (const meta of metadataList) {
-      const imgFile = meta.image; // should be the filename
-      meta.image = imageCids[imgFile];
-      meta.collection = {
-        name: collectionInfo.name,
-        description: collectionInfo.description,
-        image: `ipfs://${collectionImageCid}`,
-      };
-      const cid = await uploadText(JSON.stringify(meta), meta.name || 'nft.json');
-      updatedMetadataCids[meta.name || imgFile.replace('.png', '.json')] = `ipfs://${cid}`;
-    }
-
-    // 4. Upload collection metadata
-    const collectionMetadata = {
-      name: collectionInfo.name,
-      description: collectionInfo.description,
-      image: `ipfs://${collectionImageCid}`,
-      items: Object.values(updatedMetadataCids), // List of all NFT metadata CIDs
-    };
-    const collectionMetadataCid = await uploadText(
-      JSON.stringify(collectionMetadata),
-      'collection.json'
-    );
-
-    // 5. Return summary
-    return NextResponse.json({
-      collectionImageCid: `ipfs://${collectionImageCid}`,
-      collectionMetadataCid: `ipfs://${collectionMetadataCid}`,
-      imageCids,
-      updatedMetadataCids,
-    });
   } catch (e: any) {
     return NextResponse.json({ error: e.message || 'Upload failed' }, { status: 500 });
   }

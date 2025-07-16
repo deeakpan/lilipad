@@ -8,12 +8,22 @@ import { useRouter } from 'next/navigation';
 import JSZip from 'jszip';
 import Switch from 'react-switch';
 
+// Spinner component
+const Spinner = () => (
+  <svg className="animate-spin h-5 w-5 text-[#32CD32] inline-block ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+  </svg>
+);
+
 interface LaunchResult {
   error?: string;
   collectionImageCid?: string;
   collectionMetadataCid?: string;
   imageCids?: Record<string, string>;
   updatedMetadataCids?: Record<string, string>;
+  metadataFolderCID?: string;
+  imagesFolderCID?: string;
 }
 
 export default function CreatePage() {
@@ -82,12 +92,39 @@ export default function CreatePage() {
     setRoyalty(value);
   }
 
+  // Add helper to recursively extract files from a JSZip folder
+  async function extractFolder(zipFolder: JSZip, parentPath = ''): Promise<File[]> {
+    const files: File[] = [];
+    for (const [name, entry] of Object.entries(zipFolder.files)) {
+      if (entry.dir) continue;
+      const blob = await entry.async('blob');
+      const file = new File([blob], name, { type: blob.type });
+      files.push(file);
+    }
+    return files;
+  }
+
   async function handleExtractZip() {
     if (!zipFile) return;
     setIsExtracting(true);
     setExtractError('');
     try {
       const zip = await JSZip.loadAsync(zipFile);
+      // Find images and metadata folders
+      const imagesFiles: File[] = [];
+      const metadataFiles: File[] = [];
+      for (const [name, entry] of Object.entries(zip.files)) {
+        if (entry.dir) continue;
+        if (/images\//i.test(name)) {
+          const blob = await entry.async('blob');
+          imagesFiles.push(new File([blob], name.replace(/^.*images\//i, ''), { type: blob.type }));
+        } else if (/metadata\//i.test(name)) {
+          const blob = await entry.async('blob');
+          metadataFiles.push(new File([blob], name.replace(/^.*metadata\//i, ''), { type: blob.type }));
+        }
+      }
+      setImagesFolderFiles(imagesFiles);
+      setMetadataFolderFiles(metadataFiles);
       // Collect all files
       const files = Object.values(zip.files);
       // Find images and jsons
@@ -208,34 +245,98 @@ export default function CreatePage() {
   const [launching, setLaunching] = useState(false);
   const [launchResult, setLaunchResult] = useState<LaunchResult | null>(null);
 
+  // Add state for extracted images and metadata folders
+  const [imagesFolderFiles, setImagesFolderFiles] = useState<File[]>([]);
+  const [metadataFolderFiles, setMetadataFolderFiles] = useState<File[]>([]);
+
+  // Add state for launch progress modal
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [progressStep, setProgressStep] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('');
+  const [progressError, setProgressError] = useState('');
+
+  const progressSteps = [
+    'Uploading images to IPFS...',
+    'Updating metadata...',
+    'Uploading metadata to IPFS...',
+    'Done!'
+  ];
+
+  // Helper to append files to FormData with relative paths
+  function appendFilesWithRelativePath(formData: FormData, files: File[], key: string, folderPrefix: string) {
+    files.forEach(file => {
+      // Try to use webkitRelativePath if available, else simulate
+      const relPath = (file as any).webkitRelativePath || `${folderPrefix}/${file.name}`;
+      formData.append(key, file, relPath);
+    });
+  }
+
+  // Helper to sanitize collection name for folder naming
+  function sanitizeName(name: string) {
+    return name.toLowerCase().replace(/[^a-z0-9\-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  }
+
   async function handleLaunch() {
     setLaunching(true);
     setLaunchResult(null);
+    setShowProgressModal(true);
+    setProgressStep(0);
+    setProgressMessage(progressSteps[0]);
+    setProgressError('');
     try {
-      // Prepare FormData
-      const formData = new FormData();
-      if (bannerFile) formData.append('collectionImage', bannerFile);
-      // Add all NFT images and metadata
-      const metadataList: Array<Record<string, any>> = [];
-      extractedPairs.forEach((pair, idx) => {
-        // Append the image file with a unique name
-        formData.append('images', pair.imgFile, pair.imgFile.name);
-        // Add metadata, include the image filename for matching
-        metadataList.push({ ...pair.metadata, image: pair.imgFile.name, name: pair.imgFile.name.replace(/\.(png|jpg|jpeg|gif)$/i, '.json') });
+      const sanitizedCollectionName = sanitizeName(collectionName || 'collection');
+      // 1. Upload images folder to backend (preserve folder structure)
+      setProgressStep(0);
+      setProgressMessage(progressSteps[0]);
+      const imagesFormData = new FormData();
+      appendFilesWithRelativePath(imagesFormData, imagesFolderFiles, 'images', `${sanitizedCollectionName}-images`);
+      imagesFormData.append('uploadType', 'images');
+      const imagesRes = await fetch('/api/launch', {
+        method: 'POST',
+        body: imagesFormData,
       });
-      formData.append('metadata', JSON.stringify(metadataList));
-      formData.append('collectionInfo', JSON.stringify({
+      const imagesData = await imagesRes.json();
+      if (imagesData.error) throw new Error(imagesData.error);
+      const imagesFolderCID = imagesData.imagesFolderCID.replace('ipfs://', '');
+
+      // 2. Update metadata files in-browser with new image links
+      setProgressStep(1);
+      setProgressMessage(progressSteps[1]);
+      const updatedMetadataFiles: File[] = [];
+      for (const file of metadataFolderFiles) {
+        const text = await file.text();
+        const meta = JSON.parse(text);
+        const num = file.name.replace('.json', '');
+        meta.image = `ipfs://${imagesFolderCID}/${num}.png`;
+        updatedMetadataFiles.push(new File([JSON.stringify(meta)], file.name, { type: 'application/json' }));
+      }
+
+      // 3. Upload updated metadata folder to backend (preserve folder structure)
+      setProgressStep(2);
+      setProgressMessage(progressSteps[2]);
+      const metadataFormData = new FormData();
+      appendFilesWithRelativePath(metadataFormData, updatedMetadataFiles, 'metadata', `${sanitizedCollectionName}-metadata`);
+      metadataFormData.append('uploadType', 'metadata');
+      metadataFormData.append('collectionInfo', JSON.stringify({
         name: collectionName,
         description: collectionDesc,
       }));
-      const res = await fetch('/api/launch', {
+      if (bannerFile) metadataFormData.append('collectionImage', bannerFile);
+      // Pass imagesFolderCID to the backend with the metadata upload
+      metadataFormData.append('imagesFolderCID', imagesFolderCID);
+      const metadataRes = await fetch('/api/launch', {
         method: 'POST',
-        body: formData,
+        body: metadataFormData,
       });
-      const data = await res.json();
-      setLaunchResult(data);
+      const metadataData = await metadataRes.json();
+      if (metadataData.error) throw new Error(metadataData.error);
+      setLaunchResult({ ...metadataData, imagesFolderCID: imagesData.imagesFolderCID });
+      setProgressStep(3);
+      setProgressMessage(progressSteps[3]);
+      // Do NOT auto-close modal
     } catch (e: any) {
-      setLaunchResult({ error: e.message || 'Failed to launch' });
+      setProgressError(e.message || 'Failed to launch');
+      setProgressMessage('Error');
     }
     setLaunching(false);
   }
@@ -809,9 +910,86 @@ export default function CreatePage() {
                 <div className="break-all">NFT Metadata CIDs: {JSON.stringify(launchResult.updatedMetadataCids)}</div>
               </>
             )}
-          </div>
+        </div>
         )}
       </div>
+      {showProgressModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-[#181818] border border-[#32CD32] rounded-xl shadow-lg max-w-[400px] w-full max-h-[85vh] overflow-y-auto flex flex-col items-center relative p-0">
+            {/* Close button only when successful */}
+            {progressStep === progressSteps.length - 1 && !progressError && (
+              <button
+                className="absolute top-2 right-3 text-gray-400 hover:text-white text-2xl font-bold focus:outline-none"
+                onClick={() => setShowProgressModal(false)}
+                aria-label="Close"
+                type="button"
+              >
+                ×
+              </button>
+            )}
+            <div className="w-full px-6 pt-6 pb-2 flex flex-col items-center">
+              <h2 className="text-lg font-bold text-white mb-2 tracking-wide">Launching Collection</h2>
+              <div className="w-full bg-[#222] rounded-full h-1.5 mb-4">
+                <div
+                  className="bg-[#32CD32] h-1.5 rounded-full transition-all duration-300"
+                  style={{ width: `${((progressStep + 1) / progressSteps.length) * 100}%` }}
+                ></div>
+              </div>
+              <ul className="w-full mb-2 flex flex-col gap-1">
+                {progressSteps.map((step, idx) => (
+                  <li key={step} className={`flex items-center gap-2 text-sm ${idx === progressStep ? 'font-bold text-white' : idx < progressStep ? 'text-green-400' : 'text-gray-400'}`}>
+                    {idx < progressStep && <span className="inline-block w-3 h-3 bg-[#32CD32] rounded-full flex items-center justify-center">✓</span>}
+                    {idx === progressStep && <Spinner />}
+                    {idx > progressStep && <span className="inline-block w-3 h-3 border border-gray-400 rounded-full"></span>}
+                    <span className="truncate">{step}</span>
+                  </li>
+                ))}
+              </ul>
+              {progressError && (
+                <div className="text-red-400 font-semibold mt-2 text-center w-full">{progressError}</div>
+              )}
+            </div>
+            {!progressError && progressStep === progressSteps.length - 1 && launchResult && (
+              <>
+                <div className="w-full border-t border-[#32CD32] my-2"></div>
+                <div className="w-full px-6 pb-6 flex flex-col gap-2 items-start">
+                  <div className="text-green-400 font-semibold mb-1 text-base">Launch Successful!</div>
+                  {launchResult.collectionImageCid && (
+                    <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
+                      <div className="text-xs text-[#32CD32] font-semibold mb-0.5">Collection Image CID</div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.collectionImageCid}</span>
+                        <a href={launchResult.collectionImageCid.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/')} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View</a>
+                        <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionImageCid || '')}>Copy</button>
+                      </div>
+                    </div>
+                  )}
+                  {launchResult.metadataFolderCID && (
+                    <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
+                      <div className="text-xs text-[#32CD32] font-semibold mb-0.5">Collection Metadata Folder CID</div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.metadataFolderCID}</span>
+                        <a href={launchResult.metadataFolderCID.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/') + '/0.json'} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View 0.json</a>
+                        <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.metadataFolderCID || '')}>Copy</button>
+                      </div>
+                    </div>
+                  )}
+                  {launchResult.imagesFolderCID && (
+                    <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
+                      <div className="text-xs text-[#32CD32] font-semibold mb-0.5">Images Folder CID</div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs break-all text-white truncate max-w-[140px]">{launchResult.imagesFolderCID}</span>
+                        <a href={launchResult.imagesFolderCID.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/') + '/0.png'} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View 0.png</a>
+                        <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.imagesFolderCID || '')}>Copy</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
