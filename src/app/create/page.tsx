@@ -440,76 +440,72 @@ export default function CreatePage() {
       </div>
       {/* Page Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-2 sm:px-4 md:px-8">
-          {/* Top Section: Big Heading and Subtext */}
+        {/* Top Section: Big Heading and Subtext */}
           <div className="w-full px-0 sm:px-2 pt-4 pb-2 text-left">
             <h2 className="text-2xl sm:text-3xl font-extrabold mb-1" style={{ color: '#32CD32' }}>
               Launch NFTs on Pepe Unchained
-            </h2>
+          </h2>
             <span className="text-base sm:text-lg text-green-200 font-medium">
-              Start by generating and exporting your collection metadata{' '}
-              <a href="https://lilipad-nft-export.vercel.app" target="_blank" rel="noopener noreferrer" className="underline text-yellow-300 hover:text-yellow-400">here</a>
+            Start by generating and exporting your collection metadata{' '}
+            <a href="https://lilipad-nft-export.vercel.app" target="_blank" rel="noopener noreferrer" className="underline text-yellow-300 hover:text-yellow-400">here</a>
             </span>
           </div>
           {/* Cards Section or Form */}
           {!showForm ? (
           <div className="w-full px-0 sm:px-2 py-6 sm:py-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 md:gap-2 md:gap-x-4 justify-center place-items-center">
                 {/* Card 1: Launch an NFT */}
-                <div className="flex flex-col items-center justify-center bg-[#111] border-2 border-[#32CD32] rounded-2xl shadow-lg p-6 sm:p-8 transition-transform hover:scale-105 hover:border-yellow-400 hover:shadow-[0_0_8px_2px_#FFD600] min-h-[180px] sm:min-h-[220px] cursor-pointer text-center">
-                  <FaArrowUp className="text-[#32CD32] mb-4" style={{ fontSize: 40, minHeight: 40, minWidth: 40 }} />
+                <div className="flex flex-col items-center justify-center bg-[#111] border-2 border-[#32CD32] rounded-2xl shadow-lg p-2 sm:p-3 py-4 transition-transform hover:scale-105 hover:border-yellow-400 hover:shadow-[0_0_8px_2px_#FFD600] w-full aspect-square max-w-[420px] cursor-pointer text-center">
+                  <FaArrowUp className="text-[#32CD32] mb-3" style={{ fontSize: 56, minHeight: 56, minWidth: 56 }} />
                   <span className="text-lg sm:text-2xl font-extrabold text-white mb-2">Mint a Single NFT</span>
-                  <span className="text-sm sm:text-base text-green-200">Quickly mint one NFT into any of your collections.</span>
-                </div>
-                {/* Card 2: Launch a Collection (Generative) */}
-                <div className="flex flex-col items-center justify-center bg-[#111] border-2 border-[#32CD32] rounded-2xl shadow-lg p-6 sm:p-8 transition-transform hover:scale-105 hover:border-yellow-400 hover:shadow-[0_0_8px_2px_#FFD600] min-h-[180px] sm:min-h-[220px] cursor-pointer text-center">
-                  <FaLayerGroup className="text-[#FFD600] mb-4" style={{ fontSize: 40, minHeight: 40, minWidth: 40 }} />
-                  <span className="text-lg sm:text-2xl font-extrabold text-white mb-2">Create Generative Collection</span>
-                  <span className="text-sm sm:text-base text-green-200">Launch a collection using layers and traits for generative art.</span>
-                </div>
-                {/* Card 3: Launch a Collection (One-of-One) */}
+                  <span className="text-base sm:text-lg text-green-200">Quickly mint one NFT into any of your collections.</span>
+                  <span className="text-sm sm:text-base text-green-100 mt-1">Perfect for single drops, 1/1s, or testing your collection setup.</span>
+        </div>
+                {/* Card 2: Launch a Collection (One-of-One) */}
                 <div
-                  className="flex flex-col items-center justify-center bg-[#111] border-2 border-[#32CD32] rounded-2xl shadow-lg p-6 sm:p-8 transition-transform hover:scale-105 hover:border-yellow-400 hover:shadow-[0_0_8px_2px_#FFD600] min-h-[180px] sm:min-h-[220px] cursor-pointer text-center"
-                onClick={() => {
+                  className="flex flex-col items-center justify-center bg-[#111] border-2 border-[#32CD32] rounded-2xl shadow-lg p-2 sm:p-3 py-4 transition-transform hover:scale-105 hover:border-yellow-400 hover:shadow-[0_0_8px_2px_#FFD600] w-full aspect-square max-w-[420px] cursor-pointer text-center"
+              onClick={() => {
                     if (!isConnected) {
                       setShowModal(true);
-                  } else {
+                } else {
                       setShowForm(true);
                     }
                   }}
                 >
-                  <FaThLarge className="text-[#22c55e] mb-4" style={{ fontSize: 40, minHeight: 40, minWidth: 40 }} />
-                  <span className="text-lg sm:text-2xl font-extrabold text-white mb-2">Create One-of-One Collection</span>
-                  <span className="text-sm sm:text-base text-green-200">Build a collection of unique, individually uploaded NFTs.</span>
+                  <FaThLarge className="text-[#22c55e] mb-3" style={{ fontSize: 56, minHeight: 56, minWidth: 56 }} />
+                  <span className="text-lg sm:text-2xl font-extrabold text-white mb-2">Launch your NFT Collection</span>
+                  <span className="text-base sm:text-lg text-green-200">Upload and launch a full NFT collection with images and metadata in one go.</span>
+                  <span className="text-sm sm:text-base text-green-100 mt-1">Supports bulk upload, custom metadata, and all standard NFT formats.</span>
                 </div>
               </div>
-              {/* Modal for connect wallet */}
-              {showModal && (
+            {/* Modal for connect wallet */}
+            {showModal && (
                 <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-xs">
                   <div className="bg-black border-2 border-[#32CD32] rounded-xl shadow-xl p-4 sm:p-6 w-full flex flex-col items-center">
-                    <span className="text-base font-bold text-white mb-3">
+                  <span className="text-base font-bold text-white mb-3">
                       Connect your wallet to create a
-                      <span className="block text-white text-lg text-center mx-auto">collection</span>
-                    </span>
-                    <ConnectButtonBase.Custom>
-                      {({ openConnectModal }) => (
-                        <button
-                          onClick={() => { openConnectModal(); setShowModal(false); }}
-                          className="px-4 py-2 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors text-base mt-2"
-                        >
-                          Connect Wallet
-                        </button>
-                      )}
-                    </ConnectButtonBase.Custom>
-                    <button
-                      onClick={() => setShowModal(false)}
-                      className="mt-3 text-[#32CD32] underline hover:text-yellow-400 text-sm"
-                    >
-                      Cancel
-                    </button>
-                  </div>
+                    <span className="block text-white text-lg text-center mx-auto">collection</span>
+                  </span>
+                  <ConnectButtonBase.Custom>
+                    {({ openConnectModal }) => (
+                      <button
+                        onClick={() => { openConnectModal(); setShowModal(false); }}
+                        className="px-4 py-2 bg-yellow-400 text-black border-2 border-black rounded-full font-bold hover:bg-yellow-300 transition-colors text-base mt-2"
+                      >
+                        Connect Wallet
+                      </button>
+                    )}
+                  </ConnectButtonBase.Custom>
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="mt-3 text-[#32CD32] underline hover:text-yellow-400 text-sm"
+                  >
+                    Cancel
+                  </button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
           ) : null}
           {/* Show form below the top section, not as a replacement */}
           {showForm && !showUploadBox && (
@@ -958,8 +954,8 @@ export default function CreatePage() {
                     {launching ? 'Launching...' : 'Launch'}
                   </button>
                 </div>
-            </div>
           </div>
+        </div>
           )}
       </div>
       {showProgressModal && (
