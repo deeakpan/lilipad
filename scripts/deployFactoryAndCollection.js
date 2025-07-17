@@ -22,22 +22,21 @@ async function main() {
 
   if (!factoryAddress || factoryAddress === 'deploy') {
     // Deploy factory only
-    if (!argv.platform || !argv.launchFee || !argv.platformFeeBps) {
-      throw new Error('Missing --platform, --launchFee, or --platformFeeBps for factory deployment');
+    if (!argv.platform || !argv.platformFeeBps) {
+      throw new Error('Missing --platform or --platformFeeBps for factory deployment');
     }
     
     // Ensure platform address is properly formatted
     const platformAddress = ethers.getAddress(argv.platform);
-    const launchFee = ethers.parseUnits(argv.launchFee.toString(), 0);
     const platformFeeBps = BigInt(argv.platformFeeBps);
     
     const Factory = await ethers.getContractFactory("LaunchpadFactory");
-    factory = await Factory.deploy(platformAddress, launchFee, platformFeeBps);
+    factory = await Factory.deploy(platformAddress, platformFeeBps);
     await factory.waitForDeployment();
     factoryAddress = await factory.getAddress();
     console.log("LaunchpadFactory deployed to:", factoryAddress);
     console.log("Platform:", platformAddress);
-    console.log("Launch Fee (wei):", launchFee.toString());
+    console.log("Launch Fee (hardcoded): 15000");
     console.log("Platform Fee BPS:", platformFeeBps.toString());
     console.log("Done. To deploy a collection, rerun with --factory", factoryAddress, "and collection arguments.");
     return;

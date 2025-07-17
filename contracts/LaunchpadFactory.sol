@@ -22,10 +22,10 @@ contract LaunchpadFactory is Ownable {
 
     event CollectionDeployed(address indexed collection, address indexed owner, string vanity);
 
-    constructor(address _platform, uint256 _launchFee, uint256 _platformFeeBps) {
+    constructor(address _platform, uint256 _platformFeeBps) {
         require(_platform != address(0), "Invalid platform");
         platform = _platform;
-        launchFee = _launchFee;
+        launchFee = 15000;
         platformFeeBps = _platformFeeBps;
     }
 
