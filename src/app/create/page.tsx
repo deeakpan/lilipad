@@ -7,6 +7,7 @@ import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import JSZip from 'jszip';
 import Switch from 'react-switch';
+import { ethers } from 'ethers';
 
 // Spinner component
 const Spinner = () => (
@@ -41,6 +42,7 @@ export default function CreatePage() {
   // Form state
   const [collectionName, setCollectionName] = useState('');
   const [collectionDesc, setCollectionDesc] = useState('');
+  const [collectionSymbol, setCollectionSymbol] = useState('');
   const [vanityUrl, setVanityUrl] = useState('');
   const [vanityUrlError, setVanityUrlError] = useState('');
   const [bannerFile, setBannerFile] = useState<File | null>(null);
@@ -49,6 +51,7 @@ export default function CreatePage() {
   const [instagram, setInstagram] = useState('');
   const [website, setWebsite] = useState('');
   const [royalty, setRoyalty] = useState('');
+  const [royaltyRecipient, setRoyaltyRecipient] = useState('');
   const [samePrice, setSamePrice] = useState(true);
   const [allPrice, setAllPrice] = useState('');
   const [individualPrices, setIndividualPrices] = useState<{ [key: string]: string }>({});
@@ -175,12 +178,14 @@ export default function CreatePage() {
   // Validation for Next button
   const isFormValid =
     collectionName.trim().length > 0 &&
+    collectionSymbol.trim().length > 0 &&
     collectionDesc.trim().length > 0 &&
     vanityUrlError === '' &&
     vanityUrl.trim().length > 0 &&
     username.trim().length > 0 &&
     (!website || /^https:\/\/.+\..+/.test(website)) &&
-    royalty !== '' && Number(royalty) <= 50;
+    royalty !== '' && Number(royalty) <= 50 &&
+    royaltyRecipient.trim().length > 0;
 
   // State for final summary section
   const [showFinalSummary, setShowFinalSummary] = useState(false);
@@ -202,7 +207,9 @@ export default function CreatePage() {
   const isDatesValid = !!mintStartISO && !!mintEndISO && new Date(mintStartISO) < new Date(mintEndISO);
 
   // Helper for price validation
-  const isMintPriceValid = extractedPairs.length > 0 && Object.values(individualPrices).every(p => !!p && !isNaN(Number(p)) && Number(p) > 0);
+  const isMintPriceValid = extractedPairs.length > 0 && 
+    (samePrice ? (!!allPrice && !isNaN(Number(allPrice)) && Number(allPrice) > 0) : 
+    Object.values(individualPrices).every(p => !!p && !isNaN(Number(p)) && Number(p) > 0));
 
   // Add state for live countdown
   const [countdown, setCountdown] = useState("");
@@ -267,6 +274,23 @@ export default function CreatePage() {
     'Done!'
   ];
 
+  // Add state for fee calculation and approval
+  const [showFeePreviewModal, setShowFeePreviewModal] = useState(false);
+  const [showFeeModal, setShowFeeModal] = useState(false);
+  const [calculatedFee, setCalculatedFee] = useState('');
+  const [feeApproved, setFeeApproved] = useState(false);
+
+  // Helper to calculate fees
+  function calculateFees() {
+    const launchFee = 3; // Hardcoded for now
+    const platformFeeBps = 500; // 5%
+    const maxSupply = extractedPairs.length;
+    const mintPrice = Number(allPrice);
+    const platformFee = (maxSupply > 0 && mintPrice > 0) ? (maxSupply * mintPrice * platformFeeBps) / 10000 : 0;
+    const totalFee = launchFee + platformFee;
+    return { launchFee, platformFee, totalFee };
+  }
+
   // Helper to append files to FormData with relative paths
   function appendFilesWithRelativePath(formData: FormData, files: File[], key: string, folderPrefix: string) {
     files.forEach(file => {
@@ -282,6 +306,27 @@ export default function CreatePage() {
   }
 
   async function handleLaunch() {
+    // Step 1: Show Fee Preview modal before uploads
+    const { launchFee, platformFee, totalFee } = calculateFees();
+    setCalculatedFee(totalFee.toString());
+    setShowFeePreviewModal(true);
+    // Wait for user agreement
+    await new Promise((resolve, reject) => {
+      const checkAgreement = () => {
+        if (feeApproved) {
+          resolve(true);
+        } else if (!showFeePreviewModal) {
+          reject(new Error('Fee agreement cancelled'));
+        } else {
+          setTimeout(checkAgreement, 100);
+        }
+      };
+      checkAgreement();
+    });
+    setShowFeePreviewModal(false);
+    setFeeApproved(false);
+
+    // Step 2: Start uploads and show progress modal
     setLaunching(true);
     setLaunchResult(null);
     setShowProgressModal(true);
@@ -289,10 +334,8 @@ export default function CreatePage() {
     setProgressMessage(progressSteps[0]);
     setProgressError('');
     try {
+      // Step 2: Upload images folder
       const sanitizedCollectionName = sanitizeName(collectionName || 'collection');
-      // 1. Upload images folder to backend (preserve folder structure)
-      setProgressStep(0);
-      setProgressMessage(progressSteps[0]);
       const imagesFormData = new FormData();
       appendFilesWithRelativePath(imagesFormData, imagesFolderFiles, 'images', `${sanitizedCollectionName}-images`);
       imagesFormData.append('uploadType', 'images');
@@ -304,7 +347,7 @@ export default function CreatePage() {
       if (imagesData.error) throw new Error(imagesData.error);
       const imagesFolderCID = imagesData.imagesFolderCID.replace('ipfs://', '');
 
-      // 2. Update metadata files in-browser with new image links
+      // Step 3: Update metadata files
       setProgressStep(1);
       setProgressMessage(progressSteps[1]);
       const updatedMetadataFiles: File[] = [];
@@ -316,7 +359,7 @@ export default function CreatePage() {
         updatedMetadataFiles.push(new File([JSON.stringify(meta)], file.name, { type: 'application/json' }));
       }
 
-      // 3. Upload updated metadata folder to backend (preserve folder structure)
+      // Step 4: Upload updated metadata folder
       setProgressStep(2);
       setProgressMessage(progressSteps[2]);
       const metadataFormData = new FormData();
@@ -334,25 +377,26 @@ export default function CreatePage() {
       });
       const metadataData = await metadataRes.json();
       if (metadataData.error) throw new Error(metadataData.error);
+
+      // Step 5: Collection banner upload
       setProgressStep(3);
       setProgressMessage(progressSteps[3]);
-      // 4. Collection banner upload is part of metadata upload, so we just show the step and use the returned CID
       const collectionImageCid = metadataData.collectionImageCid?.replace('ipfs://', '');
-      // 5. Generate and upload collection-level metadata JSON
+
+      // Step 6: Generate and upload collection-level metadata
       setProgressStep(4);
       setProgressMessage(progressSteps[4]);
       const metadataFolderCID = metadataData.metadataFolderCID?.replace('ipfs://', '');
-      // Socials
       const xUrl = username ? `https://x.com/${username.replace(/^@/, '')}` : undefined;
       const igUrl = instagram ? `https://instagram.com/${instagram.replace(/^@/, '')}` : undefined;
-      // Compose collection metadata
+      
       const collectionMetadata = {
         name: collectionName,
         description: collectionDesc,
         image: collectionImageCid ? `ipfs://${collectionImageCid}` : undefined,
         external_link: website || undefined,
-        seller_fee_basis_points: royalty ? Math.round(Number(royalty) * 100) : undefined, // 5% => 500
-        fee_recipient: undefined, // can be set if needed
+        seller_fee_basis_points: royalty ? Math.round(Number(royalty) * 100) : undefined,
+        fee_recipient: royaltyRecipient || undefined,
         socials: {
           x: xUrl,
           instagram: igUrl,
@@ -364,21 +408,44 @@ export default function CreatePage() {
         mint_start: mintStartISO || undefined,
         mint_end: mintEndISO || undefined,
       };
+      
       const collectionMetadataFile = new File([
         JSON.stringify(collectionMetadata, null, 2)
       ], 'collection.json', { type: 'application/json' });
+      
       const collectionMetaFormData = new FormData();
       collectionMetaFormData.append('uploadType', 'collection-metadata');
       collectionMetaFormData.append('collectionMetadata', collectionMetadataFile);
-      // Pass CIDs for reference
       if (collectionImageCid) collectionMetaFormData.append('collectionImageCid', collectionImageCid);
       if (metadataFolderCID) collectionMetaFormData.append('metadataFolderCID', metadataFolderCID);
+      
       const collectionMetaRes = await fetch('/api/launch', {
         method: 'POST',
         body: collectionMetaFormData,
       });
       const collectionMetaData = await collectionMetaRes.json();
       if (collectionMetaData.error) throw new Error(collectionMetaData.error);
+
+      // Step 7: Deploy collection contract
+      setProgressStep(5);
+      setProgressMessage('Deploying collection contract...');
+      
+      // TODO: Add factory contract interaction here
+      // await factory.deployCollection(
+      //   collectionName, // name
+      //   collectionSymbol, // symbol
+      //   metadataData.metadataFolderCID, // baseURI
+      //   collectionMetaData.collectionMetadataCid, // collectionURI
+      //   extractedPairs.length, // maxSupply
+      //   allPrice, // mintPrice
+      //   royalty ? Math.round(Number(royalty) * 100) : 0, // royaltyBps
+      //   royaltyRecipient, // royaltyRecipient
+      //   Math.floor(new Date(mintStartISO).getTime() / 1000), // mintStart
+      //   Math.floor(new Date(mintEndISO).getTime() / 1000), // mintEnd
+      //   vanityUrl, // vanity
+      //   { value: totalFee }
+      // );
+
       setLaunchResult({
         ...metadataData,
         imagesFolderCID: imagesData.imagesFolderCID,
@@ -387,11 +454,13 @@ export default function CreatePage() {
       });
       setProgressStep(5);
       setProgressMessage(progressSteps[5]);
+      
     } catch (e: any) {
       setProgressError(e.message || 'Failed to launch');
       setProgressMessage('Error');
     }
     setLaunching(false);
+    setFeeApproved(false);
   }
 
   useEffect(() => {
@@ -527,6 +596,19 @@ export default function CreatePage() {
                         required
                       />
                     </label>
+                    {/* Collection Symbol */}
+                    <label className="flex flex-col gap-2">
+                      <span className="font-semibold text-white">Collection Symbol</span>
+                      <input
+                        type="text"
+                        className="py-3 px-4 rounded-xl border-2 border-[#444] bg-[#181818] text-white focus:outline-none focus:border-[#32CD32] transition-all"
+                        value={collectionSymbol}
+                        onChange={e => setCollectionSymbol(e.target.value)}
+                        placeholder="e.g. COOL"
+                        maxLength={10}
+                        required
+                      />
+                    </label>
                     {/* Description */}
                     <label className="flex flex-col gap-2">
                       <span className="font-semibold text-white">Description</span>
@@ -625,6 +707,7 @@ export default function CreatePage() {
                       <span className="font-semibold text-white">Royalty (%)</span>
                       <input
                         type="number"
+                        step="any"
                         className="py-3 px-4 rounded-xl border-2 border-[#444] bg-[#181818] text-white focus:outline-none focus:border-[#32CD32] transition-all"
                         value={royalty}
                         onChange={handleRoyaltyChange}
@@ -637,6 +720,19 @@ export default function CreatePage() {
                       {royalty && (Number(royalty) > 50) && (
                         <span className="text-red-400 text-xs mt-1">Royalty cannot exceed 50%</span>
                       )}
+                    </label>
+                    {/* Royalty Recipient */}
+                    <label className="flex flex-col gap-2">
+                      <span className="font-semibold text-white">Royalty Recipient Address</span>
+                      <input
+                        type="text"
+                        className="py-3 px-4 rounded-xl border-2 border-[#444] bg-[#181818] text-white focus:outline-none focus:border-[#32CD32] transition-all"
+                        value={royaltyRecipient}
+                        onChange={e => setRoyaltyRecipient(e.target.value)}
+                        placeholder="0x..."
+                        required
+                      />
+                      <span className="text-xs text-green-300">Address that will receive royalties</span>
                     </label>
                   </div>
                   <div className="flex gap-4 mt-4">
@@ -750,14 +846,16 @@ export default function CreatePage() {
                     <div className="flex flex-col gap-1 mt-2">
                       <input
                         type="number"
-                        min="0"
                         step="any"
                         className="w-32 py-2 px-3 rounded border border-[#32CD32] bg-black text-white text-sm focus:outline-none focus:border-yellow-400"
                         placeholder="1000 PEPU"
                         value={allPrice}
                         onChange={e => setAllPrice(e.target.value)}
-                        required
+                        min="1"
                       />
+                     {allPrice && (Number(allPrice) <= 0) && (
+                       <span className="text-red-400 text-xs mt-1">Mint price must be greater than 0</span>
+                     )}
                     </div>
                     {extractedPairs.length > 0 && (
                       <span className="text-xs text-green-200 mt-1">Total supply: {extractedPairs.length}</span>
@@ -838,20 +936,75 @@ export default function CreatePage() {
                     <h2 className="text-2xl font-extrabold text-yellow-300 mb-2">Lilipad Launch Fees</h2>
                     <div className="text-green-200 font-semibold">Launching a collection on Lilipad requires:</div>
                     <ul className="list-disc list-inside text-green-100 text-base ml-4">
-                      <li><span className="font-bold text-yellow-300">$10</span> (in PEPU) one-time launch fee</li>
+                      <li><span className="font-bold text-yellow-300">15,000 PEPU</span> one-time launch fee</li>
                       <li><span className="font-bold text-yellow-300">5%</span> of the total mint price of all NFTs in your collection</li>
                     </ul>
                     <div className="mt-2 text-green-100 text-base">
                       <span className="font-bold text-[#32CD32]">Example:</span><br/>
                       If you launch a collection with <span className="font-bold">100 NFTs</span> and set the mint price to <span className="font-bold">500 PEPU</span> each:<br/>
-                      <span className="ml-4">• Launch fee: <span className="font-bold text-yellow-300">$10</span> (in PEPU)</span><br/>
+                      <span className="ml-4">• Launch fee: <span className="font-bold text-yellow-300">15,000 PEPU</span></span><br/>
                       <span className="ml-4">• 5% of total mint: <span className="font-bold text-yellow-300">5% × (100 × 500 PEPU) = 2,500 PEPU</span></span><br/>
-                      <span className="ml-4">• <span className="font-bold text-green-200">Total paid: $10 (in PEPU) + 2,500 PEPU</span></span>
+                      <span className="ml-4">• <span className="font-bold text-green-200">Total paid: 15,000 PEPU + 2,500 PEPU</span></span>
                     </div>
                     <div className="mt-2 text-xs text-gray-400">Fees are required to help support the platform and ensure a high-quality experience for all creators and collectors.</div>
                   </div>
                 </div>
               )}
+            </div>
+          )}
+          {/* Fee Approval Modal */}
+          {showFeeModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+              <div className="bg-[#181818] border-2 border-[#32CD32] rounded-2xl p-6 w-full max-w-lg shadow-2xl relative flex flex-col gap-4">
+                <button onClick={() => setShowFeeModal(false)} className="absolute top-3 right-4 text-[#32CD32] text-xl font-bold hover:text-yellow-300">&times;</button>
+                <h2 className="text-2xl font-extrabold text-yellow-300 mb-2">Launch Fee Required</h2>
+                <div className="text-green-200 font-semibold">To launch your collection, you need to pay:</div>
+                <div className="bg-[#222] border border-[#32CD32] rounded-xl p-4">
+                  <div className="text-green-100 text-base">
+                    <div className="flex justify-between mb-2">
+                      <span>Launch Fee:</span>
+                      <span className="font-bold text-yellow-300">3 PEPU</span>
+                    </div>
+                    <div className="flex justify-between mb-2">
+                      <span>Platform Fee (5%):</span>
+                      <span className="font-bold text-yellow-300">
+                        {(() => {
+                          const maxSupply = extractedPairs.length;
+                          const mintPrice = Number(allPrice);
+                          const platformFee = (maxSupply > 0 && mintPrice > 0) ? (maxSupply * mintPrice * 500) / 10000 : 0;
+                          return `${platformFee.toLocaleString()} PEPU`;
+                        })()}
+                      </span>
+                    </div>
+                    <div className="border-t border-[#32CD32] pt-2 mt-2">
+                      <div className="flex justify-between">
+                        <span className="font-bold text-white">Total:</span>
+                        <span className="font-bold text-yellow-300">{calculatedFee} PEPU</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-xs text-gray-400 mb-4">
+                  This fee will be deducted from your wallet when you approve the transaction.
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowFeeModal(false)}
+                    className="flex-1 px-4 py-2 bg-black text-[#32CD32] font-bold rounded-full border-2 border-[#32CD32] hover:bg-[#222] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFeeApproved(true);
+                      setShowFeeModal(false);
+                    }}
+                    className="flex-1 px-4 py-2 bg-yellow-400 text-black font-bold rounded-full border-2 border-yellow-400 hover:bg-yellow-300 transition-colors"
+                  >
+                    Approve & Continue
+                  </button>
+                </div>
+              </div>
             </div>
           )}
           {/* Final summary section */}
@@ -1060,6 +1213,60 @@ export default function CreatePage() {
             </div>
           </div>
         </>
+      )}
+      {showFeePreviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+          <div className="bg-[#181818] border-2 border-[#32CD32] rounded-2xl p-6 w-full max-w-lg shadow-2xl relative flex flex-col gap-4">
+            <button onClick={() => setShowFeePreviewModal(false)} className="absolute top-3 right-4 text-[#32CD32] text-xl font-bold hover:text-yellow-300">&times;</button>
+            <h2 className="text-2xl font-extrabold text-yellow-300 mb-2">Review Launch Fees</h2>
+            <div className="text-green-200 font-semibold">To launch your collection, you will need to pay:</div>
+            <div className="bg-[#222] border border-[#32CD32] rounded-xl p-4">
+              <div className="text-green-100 text-base">
+                <div className="flex justify-between mb-2">
+                  <span>Launch Fee:</span>
+                  <span className="font-bold text-yellow-300">3 PEPU</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span>Platform Fee (5%):</span>
+                  <span className="font-bold text-yellow-300">
+                    {(() => {
+                      const maxSupply = extractedPairs.length;
+                      const mintPrice = Number(allPrice);
+                      const platformFee = (maxSupply > 0 && mintPrice > 0) ? (maxSupply * mintPrice * 500) / 10000 : 0;
+                      return `${platformFee.toLocaleString()} PEPU`;
+                    })()}
+                  </span>
+                </div>
+                <div className="border-t border-[#32CD32] pt-2 mt-2">
+                  <div className="flex justify-between">
+                    <span className="font-bold text-white">Total:</span>
+                    <span className="font-bold text-yellow-300">{calculatedFee} PEPU</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="text-xs text-gray-400 mb-4">
+              This fee will be required when you deploy your collection. No uploads will begin until you agree.
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowFeePreviewModal(false)}
+                className="flex-1 px-4 py-2 bg-black text-[#32CD32] font-bold rounded-full border-2 border-[#32CD32] hover:bg-[#222] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setFeeApproved(true);
+                  setShowFeePreviewModal(false);
+                }}
+                className="flex-1 px-4 py-2 bg-yellow-400 text-black font-bold rounded-full border-2 border-yellow-400 hover:bg-yellow-300 transition-colors"
+              >
+                Agree & Continue
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
