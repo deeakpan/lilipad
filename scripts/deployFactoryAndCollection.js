@@ -7,6 +7,13 @@
 
 const hre = require("hardhat");
 const { ethers } = hre;
+
+// Set the network to use
+hre.config.networks['pepu-v2-testnet-vn4qxxp9og'] = {
+  url: 'https://rpc-pepu-v2-testnet-vn4qxxp9og.t.conduit.xyz',
+  accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+};
+
 const argv = require('minimist')(process.argv.slice(2), {
   string: ['platform', 'factory'] // Force these to be strings
 });
@@ -17,33 +24,34 @@ function toUnixTimestamp(dateStr) {
 }
 
 async function main() {
+  // Connect to the specific network
+  const provider = new ethers.JsonRpcProvider('https://rpc-pepu-v2-testnet-vn4qxxp9og.t.conduit.xyz');
+  const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+  
   let factoryAddress = argv.factory;
   let factory;
 
   if (!factoryAddress || factoryAddress === 'deploy') {
     // Deploy factory only
-    if (!argv.platform || !argv.platformFeeBps) {
-      throw new Error('Missing --platform or --platformFeeBps for factory deployment');
+    if (!argv.launchFee || !argv.platformFeeBps) {
+      throw new Error('Missing --launchFee or --platformFeeBps for factory deployment');
     }
-    
-    // Ensure platform address is properly formatted
-    const platformAddress = ethers.getAddress(argv.platform);
+    const launchFee = BigInt(argv.launchFee);
     const platformFeeBps = BigInt(argv.platformFeeBps);
-    
-    const Factory = await ethers.getContractFactory("LaunchpadFactory");
-    factory = await Factory.deploy(platformAddress, platformFeeBps);
+    const Factory = await ethers.getContractFactory("LaunchpadFactory", wallet);
+    factory = await Factory.deploy(launchFee, platformFeeBps);
     await factory.waitForDeployment();
     factoryAddress = await factory.getAddress();
     console.log("LaunchpadFactory deployed to:", factoryAddress);
-    console.log("Platform:", platformAddress);
-    console.log("Launch Fee (hardcoded): 15000");
+    console.log("Launch Fee:", launchFee.toString());
     console.log("Platform Fee BPS:", platformFeeBps.toString());
     console.log("Done. To deploy a collection, rerun with --factory", factoryAddress, "and collection arguments.");
+
     return;
   }
 
   // Deploy collection via factory
-  factory = await ethers.getContractAt("LaunchpadFactory", factoryAddress);
+  factory = await ethers.getContractAt("LaunchpadFactory", factoryAddress, wallet);
   console.log("Using existing LaunchpadFactory at:", factoryAddress);
 
   const required = [

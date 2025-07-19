@@ -9,8 +9,6 @@ import "./LaunchpadCollection.sol";
  * @notice Deploys and tracks NFT collection contracts with launch fees and platform logic.
  */
 contract LaunchpadFactory is Ownable {
-    // Platform fee recipient
-    address public platform;
     // Fixed launch fee in wei (e.g., $5 in native token)
     uint256 public launchFee;
     // Platform fee percent (e.g., 5% = 500, 2 decimals)
@@ -22,16 +20,9 @@ contract LaunchpadFactory is Ownable {
 
     event CollectionDeployed(address indexed collection, address indexed owner, string vanity);
 
-    constructor(address _platform, uint256 _initialLaunchFee, uint256 _platformFeeBps) {
-        require(_platform != address(0), "Invalid platform");
-        platform = _platform;
+    constructor(uint256 _initialLaunchFee, uint256 _platformFeeBps) {
         launchFee = _initialLaunchFee;
         platformFeeBps = _platformFeeBps;
-    }
-
-    function setPlatform(address _platform) external onlyOwner {
-        require(_platform != address(0), "Invalid platform");
-        platform = _platform;
     }
 
     function setLaunchFee(uint256 _fee) external onlyOwner {
@@ -79,8 +70,7 @@ contract LaunchpadFactory is Ownable {
 
         uint256 totalPlatformFee = launchFee + (maxSupply * mintPrice * platformFeeBps) / 10000;
         require(msg.value >= totalPlatformFee, "Insufficient launch fee");
-        (bool sent, ) = platform.call{value: totalPlatformFee}("");
-        require(sent, "Fee transfer failed");
+        // No fee forwarding, accumulate in contract
 
         LaunchpadCollection collection = new LaunchpadCollection(
             name,
@@ -103,5 +93,13 @@ contract LaunchpadFactory is Ownable {
 
     function getCollections() external view returns (address[] memory) {
         return collections;
+    }
+
+    // Owner can withdraw all accumulated fees
+    function withdraw() external onlyOwner {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No balance");
+        (bool sent, ) = owner().call{value: balance}("");
+        require(sent, "Withdraw failed");
     }
 } 
