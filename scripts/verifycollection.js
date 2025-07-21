@@ -2,7 +2,7 @@
 // Usage: node scripts/verifycollection.js
 require('dotenv').config();
 const { ethers } = require('ethers');
-const factoryABI = require('../src/abi/LaunchpadFactory.json').abi;
+const factoryABI = require('../src/abi/LiliPadFactory.json').abi;
 const { execSync } = require('child_process');
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;

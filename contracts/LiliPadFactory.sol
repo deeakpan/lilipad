@@ -2,13 +2,13 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./LaunchpadCollection.sol";
+import "./LiliPadCollection.sol";
 
 /**
- * @title LaunchpadFactory
+ * @title LiliPadFactory
  * @notice Deploys and tracks NFT collection contracts with launch fees and platform logic.
  */
-contract LaunchpadFactory is Ownable {
+contract LiliPadFactory is Ownable {
     // Fixed launch fee in wei (e.g., $5 in native token)
     uint256 public launchFee;
     // Platform fee percent (e.g., 5% = 500, 2 decimals)
@@ -96,7 +96,7 @@ contract LaunchpadFactory is Ownable {
         require(msg.value >= totalPlatformFee, "Insufficient launch fee");
         // No fee forwarding, accumulate in contract
 
-        LaunchpadCollection collection = new LaunchpadCollection(
+        LiliPadCollection collection = new LiliPadCollection(
             name,
             symbol,
             baseURI,

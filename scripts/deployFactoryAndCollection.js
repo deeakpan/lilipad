@@ -12,7 +12,7 @@ const WITHDRAW_MANAGER = "0x17CaBc8001a30800835DD8206CEB0c4bA90B5913";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  const Factory = await ethers.getContractFactory("LaunchpadFactory", deployer);
+  const Factory = await ethers.getContractFactory("LiliPadFactory", deployer);
   const factory = await Factory.deploy(LAUNCH_FEE, PLATFORM_FEE_BPS, WITHDRAW_MANAGER);
   await factory.waitForDeployment();
   const factoryAddress = await factory.getAddress();

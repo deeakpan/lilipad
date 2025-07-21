@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import JSZip from 'jszip';
 import Switch from 'react-switch';
 import { ethers } from 'ethers';
-import factoryABI from '../../abi/LaunchpadFactory.json';
+import factoryABI from '../../abi/LiliPadFactory.json';
 
 // Spinner component
 const Spinner = () => (

@@ -8,10 +8,10 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/interfaces/IERC2981.sol";
 
 /**
- * @title LaunchpadCollection
+ * @title LiliPadCollection
  * @notice ERC-721 NFT collection with batch minting, royalties, supply cap, mint window, and owner withdrawal logic.
  */
-contract LaunchpadCollection is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
+contract LiliPadCollection is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
     using Strings for uint256;
 
     string public baseURI;
