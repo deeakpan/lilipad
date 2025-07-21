@@ -3,7 +3,7 @@ import Link from "next/link";
 import React, { useState, useEffect, useRef } from "react";
 import { FaWallet, FaArrowUp, FaLayerGroup, FaThLarge, FaCloudUploadAlt } from "react-icons/fa";
 import { ConnectButton as ConnectButtonBase } from "@rainbow-me/rainbowkit";
-import { useAccount } from 'wagmi';
+import { useAccount, useBalance } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import JSZip from 'jszip';
 import Switch from 'react-switch';
@@ -39,7 +39,10 @@ export default function CreatePage() {
   const [extractedPairs, setExtractedPairs] = useState<any[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractError, setExtractError] = useState('');
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
+  const [walletBalance, setWalletBalance] = useState<bigint | null>(null);
+  const [checkingBalance, setCheckingBalance] = useState(false);
+  const [hasEnoughBalance, setHasEnoughBalance] = useState(true);
   useEffect(() => { setMounted(true); }, []);
 
   // Form state
@@ -500,6 +503,28 @@ export default function CreatePage() {
       document.body.style.overflow = '';
     };
   }, [showProgressModal]);
+
+  // Fetch wallet balance when fee modal is shown and address is available
+  useEffect(() => {
+    async function checkBalance() {
+      if (!showProgressModal || !address || progressStep !== 0) return;
+      setCheckingBalance(true);
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const bal = await provider.getBalance(address);
+        setWalletBalance(bal);
+        // Calculate total fee in wei
+        const { totalFee } = calculateFees();
+        const totalFeeWei = ethers.parseEther(totalFee.toString());
+        setHasEnoughBalance(bal >= totalFeeWei);
+      } catch (e) {
+        setWalletBalance(null);
+        setHasEnoughBalance(false);
+      }
+      setCheckingBalance(false);
+    }
+    checkBalance();
+  }, [showProgressModal, address, progressStep]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#000', color: '#32CD32', borderColor: '#32CD32' }}>
@@ -1196,30 +1221,44 @@ export default function CreatePage() {
               </div>
             </div>
             <div className="text-xs text-gray-400 mb-4">
-              This fee will be required when you deploy your collection. No uploads will begin until you agree.
+              This fee will be deducted from your wallet when you approve the transaction.<br/>
+              {checkingBalance && <span>Checking wallet balance...</span>}
+              {!checkingBalance && walletBalance !== null && (
+                <span>
+                  Your balance: {ethers.formatEther(walletBalance)} PEPU<br/>
+                  {hasEnoughBalance ? (
+                    <span className="text-green-400">You have enough to cover the fee.</span>
+                  ) : (
+                    <span className="text-red-400 font-bold">Insufficient balance to cover the total fee.</span>
+                  )}
+                </span>
+              )}
             </div>
             <div className="flex gap-3">
               <button
-                        onClick={() => {
-                          setShowProgressModal(false);
-                          setLaunching(false);
-                        }}
-                        className="flex-1 px-4 py-2 bg-[#333] text-white font-bold rounded-full border-2 border-[#333] hover:bg-[#444] transition-colors"
+                onClick={() => {
+                  setShowProgressModal(false);
+                  setLaunching(false);
+                }}
+                className="flex-1 px-4 py-2 bg-[#333] text-white font-bold rounded-full border-2 border-[#333] hover:bg-[#444] transition-colors"
               >
                 Cancel
               </button>
               <button
-                        onClick={async () => {
+                onClick={() => {
                   setFeeApproved(true);
-                          setProgressStep(1);
-                          // Start the actual launch process
-                          await startLaunchProcess();
+                  setProgressStep(1);
+                  startLaunchProcess();
                 }}
                 className="flex-1 px-4 py-2 bg-yellow-400 text-black font-bold rounded-full border-2 border-yellow-400 hover:bg-yellow-300 transition-colors"
+                disabled={!hasEnoughBalance || checkingBalance || !isConnected}
               >
-                        Approve & Continue
+                Approve & Continue
               </button>
             </div>
+            {!isConnected && (
+              <div className="text-red-400 font-bold mt-2">Please connect your wallet to continue.</div>
+            )}
           </div>
                 )}
 
