@@ -19,7 +19,24 @@ contract LaunchpadFactory is Ownable {
     mapping(string => address) public vanityToCollection;
     address public withdrawManager;
 
-    event CollectionDeployed(address indexed collection, address indexed owner, string vanity);
+    event CollectionDeployedMain(
+        address indexed collection,
+        address indexed owner,
+        string vanity
+    );
+    event CollectionDeployedDetails(
+        address indexed collection,
+        string name,
+        string symbol,
+        string baseURI,
+        string collectionURI,
+        uint256 maxSupply,
+        uint256 mintPrice,
+        uint96 royaltyBps,
+        address royaltyRecipient,
+        uint256 mintStart,
+        uint256 mintEnd
+    );
 
     constructor(uint256 _initialLaunchFee, uint256 _platformFeeBps, address _withdrawManager) {
         launchFee = _initialLaunchFee;
@@ -94,7 +111,20 @@ contract LaunchpadFactory is Ownable {
         );
         collections.push(address(collection));
         vanityToCollection[vanity] = address(collection);
-        emit CollectionDeployed(address(collection), msg.sender, vanity);
+        emit CollectionDeployedMain(address(collection), msg.sender, vanity);
+        emit CollectionDeployedDetails(
+            address(collection),
+            name,
+            symbol,
+            baseURI,
+            collectionURI,
+            maxSupply,
+            mintPrice,
+            royaltyBps,
+            royaltyRecipient,
+            mintStart,
+            mintEnd
+        );
         return address(collection);
     }
 
@@ -106,7 +136,7 @@ contract LaunchpadFactory is Ownable {
     function withdraw() external onlyWithdrawer {
         uint256 balance = address(this).balance;
         require(balance > 0, "No balance");
-        (bool sent, ) = owner().call{value: balance}("");
+        (bool sent, ) = msg.sender.call{value: balance}("");
         require(sent, "Withdraw failed");
     }
 } 

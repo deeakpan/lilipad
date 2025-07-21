@@ -455,10 +455,11 @@ export default function CreatePage() {
 
       // Wait for transaction confirmation
       const receipt = await tx.wait();
+      // Listen for the correct event name that emits the collection address
       const event = receipt.logs.find((log: any) => {
         try {
           const parsed = factory.interface.parseLog(log);
-          return parsed?.name === 'CollectionDeployed';
+          return parsed?.name === 'CollectionDeployedMain';
         } catch {
           return false;
         }
@@ -1246,7 +1247,19 @@ export default function CreatePage() {
                     <div className="w-full border-t border-[#32CD32] my-2"></div>
                     <div className="w-full px-2 sm:px-6 pb-6 flex flex-col gap-4 items-start">
                       <div className="text-green-400 font-semibold mb-1 text-sm sm:text-base">Launch Successful!</div>
-                      
+                      {collectionName && (
+                        <div className="text-lg font-bold text-yellow-300">{collectionName}</div>
+                      )}
+                      {vanityUrl && (
+                        <a
+                          href={`https://lilipad.art/collection/${vanityUrl}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-yellow-300 underline font-semibold text-base"
+                        >
+                          View Collection
+                        </a>
+                      )}
                       {launchResult.collectionAddress && (
                         <div className="w-full bg-[#232323] rounded p-3 flex flex-col gap-2 border border-[#32CD32]">
                           <div className="text-xs text-[#32CD32] font-semibold mb-1">Collection Contract Address</div>
@@ -1256,13 +1269,19 @@ export default function CreatePage() {
                           </div>
                         </div>
                       )}
-                      
                       {launchResult.collectionURL && (
                         <div className="w-full bg-[#232323] rounded p-3 flex flex-col gap-2 border border-[#FFD700]">
                           <div className="text-xs text-[#FFD700] font-semibold mb-1">Collection URL</div>
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-xs break-all text-white">{launchResult.collectionURL}</span>
-                            <a href={launchResult.collectionURL.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/')} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#FFD700] underline">View</a>
+                            <a
+                              href={launchResult.collectionURL.replace('ipfs://', 'https://ipfs.io/ipfs/')}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-1 text-xs text-[#FFD700] underline"
+                            >
+                              View
+                            </a>
                             <button className="ml-1 text-xs text-[#FFD700] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionURL || '')}>Copy</button>
                           </div>
                         </div>
