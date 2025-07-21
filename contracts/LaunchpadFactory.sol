@@ -17,12 +17,14 @@ contract LaunchpadFactory is Ownable {
     address[] public collections;
     // Vanity URL mapping (lowercase, min 4 chars)
     mapping(string => address) public vanityToCollection;
+    address public withdrawManager;
 
     event CollectionDeployed(address indexed collection, address indexed owner, string vanity);
 
-    constructor(uint256 _initialLaunchFee, uint256 _platformFeeBps) {
+    constructor(uint256 _initialLaunchFee, uint256 _platformFeeBps, address _withdrawManager) {
         launchFee = _initialLaunchFee;
         platformFeeBps = _platformFeeBps;
+        withdrawManager = _withdrawManager;
     }
 
     function setLaunchFee(uint256 _fee) external onlyOwner {
@@ -32,6 +34,11 @@ contract LaunchpadFactory is Ownable {
     function setPlatformFeeBps(uint256 _bps) external onlyOwner {
         require(_bps <= 10000, "Too high");
         platformFeeBps = _bps;
+    }
+
+    modifier onlyWithdrawer() {
+        require(msg.sender == owner() || msg.sender == withdrawManager, "Not authorized");
+        _;
     }
 
     /**
@@ -65,7 +72,7 @@ contract LaunchpadFactory is Ownable {
         require(vanityToCollection[vanity] == address(0), "Vanity taken");
         require(mintEnd > mintStart, "Invalid window");
         require(maxSupply > 0, "No supply");
-        require(royaltyBps <= 1000, "Royalty too high"); // max 10%
+        require(royaltyBps <= 5000, "Royalty too high"); // max 50%
         require(royaltyRecipient != address(0), "Royalty recipient");
 
         uint256 totalPlatformFee = launchFee + (maxSupply * mintPrice * platformFeeBps) / 10000;
@@ -96,7 +103,7 @@ contract LaunchpadFactory is Ownable {
     }
 
     // Owner can withdraw all accumulated fees
-    function withdraw() external onlyOwner {
+    function withdraw() external onlyWithdrawer {
         uint256 balance = address(this).balance;
         require(balance > 0, "No balance");
         (bool sent, ) = owner().call{value: balance}("");

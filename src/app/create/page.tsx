@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import JSZip from 'jszip';
 import Switch from 'react-switch';
 import { ethers } from 'ethers';
+import factoryABI from '../../abi/LaunchpadFactory.json';
 
 // Spinner component
 const Spinner = () => (
@@ -21,6 +22,8 @@ interface LaunchResult {
   error?: string;
   collectionImageCid?: string;
   collectionMetadataCid?: string;
+  collectionAddress?: string;
+  collectionURL?: string;
   imageCids?: Record<string, string>;
   updatedMetadataCids?: Record<string, string>;
   metadataFolderCID?: string;
@@ -306,35 +309,26 @@ export default function CreatePage() {
   }
 
   async function handleLaunch() {
-    // Step 1: Show Fee Preview modal before uploads
-    const { launchFee, platformFee, totalFee } = calculateFees();
-    setCalculatedFee(totalFee.toString());
-    setShowFeePreviewModal(true);
-    // Wait for user agreement
-    await new Promise((resolve, reject) => {
-      const checkAgreement = () => {
-        if (feeApproved) {
-          resolve(true);
-        } else if (!showFeePreviewModal) {
-          reject(new Error('Fee agreement cancelled'));
-        } else {
-          setTimeout(checkAgreement, 100);
-        }
-      };
-      checkAgreement();
-    });
-    setShowFeePreviewModal(false);
-    setFeeApproved(false);
-
-    // Step 2: Start uploads and show progress modal
+    // Start the unified progress modal flow
     setLaunching(true);
     setLaunchResult(null);
     setShowProgressModal(true);
     setProgressStep(0);
-    setProgressMessage(progressSteps[0]);
     setProgressError('');
+    
+    // Calculate fees for display
+    const { launchFee, platformFee, totalFee } = calculateFees();
+    setCalculatedFee(totalFee.toString());
+    
+    // The actual launch process will be triggered by the "Approve & Continue" button
+    // This function just sets up the modal
+  }
+
+  async function startLaunchProcess() {
     try {
-      // Step 2: Upload images folder
+      // Step 1: Upload images folder
+      setProgressStep(1);
+      setProgressMessage('Uploading images...');
       const sanitizedCollectionName = sanitizeName(collectionName || 'collection');
       const imagesFormData = new FormData();
       appendFilesWithRelativePath(imagesFormData, imagesFolderFiles, 'images', `${sanitizedCollectionName}-images`);
@@ -347,9 +341,9 @@ export default function CreatePage() {
       if (imagesData.error) throw new Error(imagesData.error);
       const imagesFolderCID = imagesData.imagesFolderCID.replace('ipfs://', '');
 
-      // Step 3: Update metadata files
-      setProgressStep(1);
-      setProgressMessage(progressSteps[1]);
+      // Step 2: Update metadata files
+      setProgressStep(2);
+      setProgressMessage('Updating metadata...');
       const updatedMetadataFiles: File[] = [];
       for (const file of metadataFolderFiles) {
         const text = await file.text();
@@ -359,9 +353,9 @@ export default function CreatePage() {
         updatedMetadataFiles.push(new File([JSON.stringify(meta)], file.name, { type: 'application/json' }));
       }
 
-      // Step 4: Upload updated metadata folder
-      setProgressStep(2);
-      setProgressMessage(progressSteps[2]);
+      // Step 3: Upload updated metadata folder
+      setProgressStep(3);
+      setProgressMessage('Uploading metadata...');
       const metadataFormData = new FormData();
       appendFilesWithRelativePath(metadataFormData, updatedMetadataFiles, 'metadata', `${sanitizedCollectionName}-metadata`);
       metadataFormData.append('uploadType', 'metadata');
@@ -378,14 +372,9 @@ export default function CreatePage() {
       const metadataData = await metadataRes.json();
       if (metadataData.error) throw new Error(metadataData.error);
 
-      // Step 5: Collection banner upload
-      setProgressStep(3);
-      setProgressMessage(progressSteps[3]);
-      const collectionImageCid = metadataData.collectionImageCid?.replace('ipfs://', '');
-
-      // Step 6: Generate and upload collection-level metadata
+      // Step 4: Generate and upload collection-level metadata
       setProgressStep(4);
-      setProgressMessage(progressSteps[4]);
+      setProgressMessage('Creating collection metadata...');
       const metadataFolderCID = metadataData.metadataFolderCID?.replace('ipfs://', '');
       const xUrl = username ? `https://x.com/${username.replace(/^@/, '')}` : undefined;
       const igUrl = instagram ? `https://instagram.com/${instagram.replace(/^@/, '')}` : undefined;
@@ -393,7 +382,7 @@ export default function CreatePage() {
       const collectionMetadata = {
         name: collectionName,
         description: collectionDesc,
-        image: collectionImageCid ? `ipfs://${collectionImageCid}` : undefined,
+        image: metadataData.collectionImageCid?.replace('ipfs://', '') ? `ipfs://${metadataData.collectionImageCid.replace('ipfs://', '')}` : undefined,
         external_link: website || undefined,
         seller_fee_basis_points: royalty ? Math.round(Number(royalty) * 100) : undefined,
         fee_recipient: royaltyRecipient || undefined,
@@ -416,7 +405,7 @@ export default function CreatePage() {
       const collectionMetaFormData = new FormData();
       collectionMetaFormData.append('uploadType', 'collection-metadata');
       collectionMetaFormData.append('collectionMetadata', collectionMetadataFile);
-      if (collectionImageCid) collectionMetaFormData.append('collectionImageCid', collectionImageCid);
+      if (metadataData.collectionImageCid) collectionMetaFormData.append('collectionImageCid', metadataData.collectionImageCid);
       if (metadataFolderCID) collectionMetaFormData.append('metadataFolderCID', metadataFolderCID);
       
       const collectionMetaRes = await fetch('/api/launch', {
@@ -426,41 +415,78 @@ export default function CreatePage() {
       const collectionMetaData = await collectionMetaRes.json();
       if (collectionMetaData.error) throw new Error(collectionMetaData.error);
 
-      // Step 7: Deploy collection contract
+      // Step 5: Deploy collection contract
       setProgressStep(5);
       setProgressMessage('Deploying collection contract...');
       
-      // TODO: Add factory contract interaction here
-      // await factory.deployCollection(
-      //   collectionName, // name
-      //   collectionSymbol, // symbol
-      //   metadataData.metadataFolderCID, // baseURI
-      //   collectionMetaData.collectionMetadataCid, // collectionURI
-      //   extractedPairs.length, // maxSupply
-      //   allPrice, // mintPrice
-      //   royalty ? Math.round(Number(royalty) * 100) : 0, // royaltyBps
-      //   royaltyRecipient, // royaltyRecipient
-      //   Math.floor(new Date(mintStartISO).getTime() / 1000), // mintStart
-      //   Math.floor(new Date(mintEndISO).getTime() / 1000), // mintEnd
-      //   vanityUrl, // vanity
-      //   { value: totalFee }
-      // );
+      // Get the factory contract address from environment
+      const factoryAddress = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
+      if (!factoryAddress) {
+        throw new Error('Factory address not configured');
+      }
+
+      // Connect to the factory contract
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const factory = new ethers.Contract(factoryAddress, factoryABI.abi, signer);
+
+      // Convert price to wei
+      const mintPriceWei = ethers.parseEther(allPrice || '0');
+      
+      // Calculate fees for the contract call
+      const { launchFee, platformFee, totalFee } = calculateFees();
+      // Convert totalFee (in ether) to wei
+      const totalFeeWei = ethers.parseEther(totalFee.toString());
+      // Deploy the collection
+      const tx = await factory.deployCollection(
+        collectionName, // name
+        collectionSymbol, // symbol
+        `ipfs://${metadataFolderCID}`, // baseURI
+        `ipfs://${collectionMetaData.collectionMetadataCid}`, // collectionURI
+        extractedPairs.length, // maxSupply
+        mintPriceWei, // mintPrice
+        royalty ? Math.round(Number(royalty) * 100) : 0, // royaltyBps
+        royaltyRecipient, // royaltyRecipient
+        Math.floor(new Date(mintStartISO).getTime() / 1000), // mintStart
+        Math.floor(new Date(mintEndISO).getTime() / 1000), // mintEnd
+        vanityUrl, // vanity
+        { value: totalFeeWei }
+      );
+
+      // Wait for transaction confirmation
+      const receipt = await tx.wait();
+      const event = receipt.logs.find((log: any) => {
+        try {
+          const parsed = factory.interface.parseLog(log);
+          return parsed?.name === 'CollectionDeployed';
+        } catch {
+          return false;
+        }
+      });
+      
+      let collectionAddress = null;
+      if (event) {
+        const parsed = factory.interface.parseLog(event);
+        collectionAddress = parsed?.args?.collection;
+      }
+
+      console.log('Collection deployed to:', collectionAddress);
+
+      // Step 6: Show final results
+      setProgressStep(6);
+      setProgressMessage('Launch complete!');
 
       setLaunchResult({
-        ...metadataData,
+        collectionAddress: collectionAddress,
+        collectionURL: `ipfs://${collectionMetaData.collectionMetadataCid}`,
+        metadataFolderCID: metadataFolderCID,
         imagesFolderCID: imagesData.imagesFolderCID,
-        collectionMetadataCid: collectionMetaData.collectionMetadataCid,
-        collectionImageCid: collectionImageCid ? `ipfs://${collectionImageCid}` : '',
       });
-      setProgressStep(5);
-      setProgressMessage(progressSteps[5]);
       
     } catch (e: any) {
       setProgressError(e.message || 'Failed to launch');
       setProgressMessage('Error');
     }
-    setLaunching(false);
-    setFeeApproved(false);
   }
 
   useEffect(() => {
@@ -603,7 +629,11 @@ export default function CreatePage() {
                         type="text"
                         className="py-3 px-4 rounded-xl border-2 border-[#444] bg-[#181818] text-white focus:outline-none focus:border-[#32CD32] transition-all"
                         value={collectionSymbol}
-                        onChange={e => setCollectionSymbol(e.target.value)}
+                        onChange={e => {
+                          // Convert to uppercase and remove spaces and special characters
+                          const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                          setCollectionSymbol(value);
+                        }}
                         placeholder="e.g. COOL"
                         maxLength={10}
                         required
@@ -1120,7 +1150,7 @@ export default function CreatePage() {
                 ⚠️ Do not close this modal or navigate away until the process is complete.
               </div>
               {/* Close button only when successful */}
-              {progressStep === progressSteps.length - 1 && !progressError && (
+              {progressStep === 6 && !progressError && (
                 <button
                   className="absolute top-2 right-3 text-gray-400 hover:text-white text-2xl font-bold focus:outline-none"
                   onClick={() => setShowProgressModal(false)}
@@ -1131,96 +1161,15 @@ export default function CreatePage() {
                 </button>
               )}
               <div className="w-full px-2 sm:px-6 pt-6 pb-2 flex flex-col items-center">
-                <h2 className="text-base sm:text-lg font-bold text-white mb-2 tracking-wide">Launching Collection</h2>
-                <div className="w-full bg-[#222] rounded-full h-1.5 mb-4">
-                  <div
-                    className="bg-[#32CD32] h-1.5 rounded-full transition-all duration-300"
-                    style={{ width: `${((progressStep + 1) / progressSteps.length) * 100}%` }}
-                  ></div>
-                </div>
-                <ul className="w-full mb-2 flex flex-col gap-1">
-                  {progressSteps.map((step, idx) => (
-                    <li key={step} className={`flex items-center gap-2 text-xs sm:text-sm ${idx === progressStep ? 'font-bold text-white' : idx < progressStep ? 'text-green-400' : 'text-gray-400'}`}> 
-                      {idx < progressStep && <span className="inline-block w-3 h-3 bg-[#32CD32] rounded-full flex items-center justify-center">✓</span>}
-                      {idx === progressStep && <Spinner />}
-                      {idx > progressStep && <span className="inline-block w-3 h-3 border border-gray-400 rounded-full"></span>}
-                      <span className="truncate">{step}</span>
-                    </li>
-                  ))}
-                </ul>
-                {progressError && (
-                  <div className="text-red-400 font-semibold mt-2 text-center w-full text-xs sm:text-sm">{progressError}</div>
-                )}
-              </div>
-              {!progressError && progressStep === progressSteps.length - 1 && launchResult && (
-                <>
-                  <div className="w-full border-t border-[#32CD32] my-2"></div>
-                  <div className="w-full px-2 sm:px-6 pb-6 flex flex-col gap-2 items-start">
-                    <div className="text-green-400 font-semibold mb-1 text-sm sm:text-base">Launch Successful!</div>
-                    {launchResult.collectionImageCid && (
-                      <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
-                        <div className="text-xs text-[#32CD32] font-semibold mb-0.5">Collection Image CID</div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs break-all text-white truncate max-w-[90px] sm:max-w-[140px]">{launchResult.collectionImageCid}</span>
-                          <a href={launchResult.collectionImageCid.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/')} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View</a>
-                          <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionImageCid || '')}>Copy</button>
-                        </div>
-                      </div>
-                    )}
-                    {launchResult.collectionImageCid && (
-                      <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#FFD700]">
-                        <div className="text-xs text-[#FFD700] font-semibold mb-0.5">Collection Banner CID</div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs break-all text-white truncate max-w-[90px] sm:max-w-[140px]">{launchResult.collectionImageCid}</span>
-                          <a href={launchResult.collectionImageCid.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/')} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#FFD700] underline">View</a>
-                          <button className="ml-1 text-xs text-[#FFD700] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionImageCid || '')}>Copy</button>
-                        </div>
-                      </div>
-                    )}
-                    {launchResult.metadataFolderCID && (
-                      <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
-                        <div className="text-xs text-[#32CD32] font-semibold mb-0.5">NFT Metadata Folder CID</div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs break-all text-white truncate max-w-[90px] sm:max-w-[140px]">{launchResult.metadataFolderCID}</span>
-                          <a href={launchResult.metadataFolderCID.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/') + '/0.json'} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View 0.json</a>
-                          <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.metadataFolderCID || '')}>Copy</button>
-                        </div>
-                      </div>
-                    )}
-                    {launchResult.imagesFolderCID && (
-                      <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
-                        <div className="text-xs text-[#32CD32] font-semibold mb-0.5">Images Folder CID</div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs break-all text-white truncate max-w-[90px] sm:max-w-[140px]">{launchResult.imagesFolderCID}</span>
-                          <a href={launchResult.imagesFolderCID.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/') + '/0.png'} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View 0.png</a>
-                          <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.imagesFolderCID || '')}>Copy</button>
-                        </div>
-                      </div>
-                    )}
-                    {launchResult.collectionMetadataCid && (
-                      <div className="w-full bg-[#232323] rounded p-2 flex flex-col gap-1 border border-[#32CD32]">
-                        <div className="text-xs text-[#32CD32] font-semibold mb-0.5">Collection Metadata CID</div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs break-all text-white truncate max-w-[90px] sm:max-w-[140px]">{launchResult.collectionMetadataCid}</span>
-                          <a href={launchResult.collectionMetadataCid.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/')} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#32CD32] underline">View</a>
-                          <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionMetadataCid || '')}>Copy</button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-      {showFeePreviewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-          <div className="bg-[#181818] border-2 border-[#32CD32] rounded-2xl p-6 w-full max-w-lg shadow-2xl relative flex flex-col gap-4">
-            <button onClick={() => setShowFeePreviewModal(false)} className="absolute top-3 right-4 text-[#32CD32] text-xl font-bold hover:text-yellow-300">&times;</button>
-            <h2 className="text-2xl font-extrabold text-yellow-300 mb-2">Review Launch Fees</h2>
-            <div className="text-green-200 font-semibold">To launch your collection, you will need to pay:</div>
-            <div className="bg-[#222] border border-[#32CD32] rounded-xl p-4">
+                <h2 className="text-base sm:text-lg font-bold text-white mb-2 tracking-wide">
+                  {progressStep === 0 ? 'Review Launch Fees' : 'Launching Collection'}
+                </h2>
+                
+                {/* Fee Review Step */}
+                {progressStep === 0 && (
+                  <div className="w-full">
+                    <div className="text-green-200 font-semibold mb-4">To launch your collection, you will need to pay:</div>
+                    <div className="bg-[#222] border border-[#32CD32] rounded-xl p-4 mb-4">
               <div className="text-green-100 text-base">
                 <div className="flex justify-between mb-2">
                   <span>Launch Fee:</span>
@@ -1250,24 +1199,83 @@ export default function CreatePage() {
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => setShowFeePreviewModal(false)}
-                className="flex-1 px-4 py-2 bg-black text-[#32CD32] font-bold rounded-full border-2 border-[#32CD32] hover:bg-[#222] transition-colors"
+                        onClick={() => {
+                          setShowProgressModal(false);
+                          setLaunching(false);
+                        }}
+                        className="flex-1 px-4 py-2 bg-[#333] text-white font-bold rounded-full border-2 border-[#333] hover:bg-[#444] transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={() => {
+                        onClick={async () => {
                   setFeeApproved(true);
-                  setShowFeePreviewModal(false);
+                          setProgressStep(1);
+                          // Start the actual launch process
+                          await startLaunchProcess();
                 }}
                 className="flex-1 px-4 py-2 bg-yellow-400 text-black font-bold rounded-full border-2 border-yellow-400 hover:bg-yellow-300 transition-colors"
               >
-                Agree & Continue
+                        Approve & Continue
               </button>
             </div>
           </div>
+                )}
+
+                {/* Progress Steps */}
+                {progressStep > 0 && (
+                  <>
+                    <div className="w-full bg-[#222] rounded-full h-1.5 mb-4">
+                      <div
+                        className="bg-[#32CD32] h-1.5 rounded-full transition-all duration-300"
+                        style={{ width: `${((progressStep) / 6) * 100}%` }}
+                      ></div>
         </div>
+                    <div className="w-full mb-4">
+                      <div className="text-center text-white font-semibold mb-2">{progressMessage}</div>
+                      {progressError && (
+                        <div className="text-red-400 font-semibold mt-2 text-center w-full text-xs sm:text-sm">{progressError}</div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* Final Results */}
+                {!progressError && progressStep === 6 && launchResult && (
+                  <>
+                    <div className="w-full border-t border-[#32CD32] my-2"></div>
+                    <div className="w-full px-2 sm:px-6 pb-6 flex flex-col gap-4 items-start">
+                      <div className="text-green-400 font-semibold mb-1 text-sm sm:text-base">Launch Successful!</div>
+                      
+                      {launchResult.collectionAddress && (
+                        <div className="w-full bg-[#232323] rounded p-3 flex flex-col gap-2 border border-[#32CD32]">
+                          <div className="text-xs text-[#32CD32] font-semibold mb-1">Collection Contract Address</div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs break-all text-white">{launchResult.collectionAddress}</span>
+                            <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionAddress || '')}>Copy</button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {launchResult.collectionURL && (
+                        <div className="w-full bg-[#232323] rounded p-3 flex flex-col gap-2 border border-[#FFD700]">
+                          <div className="text-xs text-[#FFD700] font-semibold mb-1">Collection URL</div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs break-all text-white">{launchResult.collectionURL}</span>
+                            <a href={launchResult.collectionURL.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/')} target="_blank" rel="noopener noreferrer" className="ml-1 text-xs text-[#FFD700] underline">View</a>
+                            <button className="ml-1 text-xs text-[#FFD700] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionURL || '')}>Copy</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
       )}
+
     </div>
   );
 } 
