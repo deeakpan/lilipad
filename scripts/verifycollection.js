@@ -4,9 +4,13 @@ require('dotenv').config();
 const { ethers } = require('ethers');
 const factoryABI = require('../src/abi/LiliPadFactory.json').abi;
 const { execSync } = require('child_process');
+const { createClient } = require('@supabase/supabase-js');
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
 const RPC_URL = 'https://rpc-pepu-v2-testnet-vn4qxxp9og.t.conduit.xyz';
+const supabaseUrl = 'https://fidibsatkkwkxbqohudm.supabase.co';
+const supabaseKey = process.env.SUPABASE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 if (!FACTORY_ADDRESS) {
   console.error('NEXT_PUBLIC_FACTORY_ADDRESS not set in .env');
@@ -53,6 +57,20 @@ async function main() {
         console.log('Verifying collection contract with:');
         console.log(verifyCmd);
         const output = execSync(verifyCmd, { stdio: 'inherit' });
+        // After successful verification, upload to Supabase
+        const { error } = await supabase.from('lilipad marketplace collections').insert([
+          {
+            address: collection,
+            'vanity url': vanity,
+            metadata_url: details.baseURI,
+            collection_url: details.collectionURI
+          }
+        ]);
+        if (error) {
+          console.error('Supabase upload error:', error.message);
+        } else {
+          console.log('Collection details uploaded to Supabase.');
+        }
       } catch (err) {
         console.error('Verification failed:', err.message);
       }

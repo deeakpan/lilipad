@@ -14,11 +14,11 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   const Factory = await ethers.getContractFactory("LiliPadFactory", deployer);
   const factory = await Factory.deploy(LAUNCH_FEE, PLATFORM_FEE_BPS, WITHDRAW_MANAGER);
-  await factory.waitForDeployment();
+    await factory.waitForDeployment();
   const factoryAddress = await factory.getAddress();
   console.log("========== LaunchpadFactory Deployment ==========");
   process.stdout.write("");
-  console.log("LaunchpadFactory deployed to:", factoryAddress);
+    console.log("LaunchpadFactory deployed to:", factoryAddress);
   process.stdout.write("");
   console.log("Launch Fee:", LAUNCH_FEE.toString());
   process.stdout.write("");

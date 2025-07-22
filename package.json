@@ -12,6 +12,7 @@
     "@lighthouse-web3/sdk": "^0.4.0",
     "@openzeppelin/contracts": "^4.9.3",
     "@rainbow-me/rainbowkit": "^2.2.8",
+    "@supabase/supabase-js": "^2.52.0",
     "@types/jszip": "^3.4.0",
     "dotenv": "^16.3.1",
     "framer-motion": "^12.23.0",
