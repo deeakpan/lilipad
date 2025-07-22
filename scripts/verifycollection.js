@@ -51,6 +51,18 @@ async function main() {
       console.log('RoyaltyRecipient:', details.royaltyRecipient);
       console.log('MintStart:', details.mintStart.toString());
       console.log('MintEnd:', details.mintEnd.toString());
+      // Check if collection already exists in Supabase
+      const { data: existing, error: readError } = await supabase
+        .from('lilipad marketplace collections')
+        .select('address')
+        .eq('address', collection);
+      if (readError) {
+        console.error('Supabase read error:', readError.message);
+      }
+      if (existing && existing.length > 0) {
+        console.log('Collection already exists on lilipad db, skipping:', collection);
+        continue;
+      }
       // Attempt to verify the collection contract
       try {
         const verifyCmd = `npx hardhat verify --network pepu-v2-testnet-vn4qxxp9og ${collection} "${details.name}" "${details.symbol}" "${details.baseURI}" "${details.collectionURI}" ${details.maxSupply} ${details.mintPrice} ${details.royaltyBps} ${details.royaltyRecipient} ${details.mintStart} ${details.mintEnd} ${owner}`;
