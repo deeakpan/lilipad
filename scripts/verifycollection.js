@@ -17,24 +17,25 @@ if (!FACTORY_ADDRESS) {
   process.exit(1);
 }
 
-async function main() {
+const seenCollections = new Set();
+
+async function pollAndVerify() {
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   const factory = new ethers.Contract(FACTORY_ADDRESS, factoryABI, provider);
-
   console.log('Listening for collection creation events on:', FACTORY_ADDRESS);
 
-  // Get all past events
+  while (true) {
+    try {
   const mainEvents = await factory.queryFilter('CollectionDeployedMain');
   const detailsEvents = await factory.queryFilter('CollectionDeployedDetails');
-
-  // Map details by collection address for easy lookup
   const detailsByCollection = {};
   for (const ev of detailsEvents) {
     detailsByCollection[ev.args.collection.toLowerCase()] = ev.args;
   }
-
   for (const ev of mainEvents) {
     const { collection, owner, vanity } = ev.args;
+        if (seenCollections.has(collection.toLowerCase())) continue;
+        seenCollections.add(collection.toLowerCase());
     const details = detailsByCollection[collection.toLowerCase()];
     console.log('---');
     console.log('Collection:', collection);
@@ -51,6 +52,21 @@ async function main() {
       console.log('RoyaltyRecipient:', details.royaltyRecipient);
       console.log('MintStart:', details.mintStart.toString());
       console.log('MintEnd:', details.mintEnd.toString());
+          // Print all constructor arguments with labels
+          console.log('--- Constructor Arguments ---');
+          console.log('Name:', details.name);
+          console.log('Symbol:', details.symbol);
+          console.log('BaseURI:', details.baseURI);
+          console.log('CollectionURI:', details.collectionURI);
+          console.log('MaxSupply:', details.maxSupply.toString());
+          console.log('MintPrice:', details.mintPrice.toString());
+          console.log('RoyaltyBps:', details.royaltyBps.toString());
+          console.log('RoyaltyRecipient:', details.royaltyRecipient);
+          console.log('MintStart:', details.mintStart.toString());
+          console.log('MintEnd:', details.mintEnd.toString());
+          console.log('Owner:', owner);
+          console.log('CustomMintToken:', details.customMintToken);
+          console.log('CustomMintPrice:', details.customMintPrice.toString());
       // Check if collection already exists in Supabase
       const { data: existing, error: readError } = await supabase
         .from('lilipad marketplace collections')
@@ -65,7 +81,7 @@ async function main() {
       }
       // Attempt to verify the collection contract
       try {
-        const verifyCmd = `npx hardhat verify --network pepu-v2-testnet-vn4qxxp9og ${collection} "${details.name}" "${details.symbol}" "${details.baseURI}" "${details.collectionURI}" ${details.maxSupply} ${details.mintPrice} ${details.royaltyBps} ${details.royaltyRecipient} ${details.mintStart} ${details.mintEnd} ${owner}`;
+            const verifyCmd = `npx hardhat verify --network pepu-v2-testnet-vn4qxxp9og ${collection} "${details.name}" "${details.symbol}" "${details.baseURI}" "${details.collectionURI}" ${details.maxSupply} ${details.mintPrice} ${details.royaltyBps} ${details.royaltyRecipient} ${details.mintStart} ${details.mintEnd} ${owner} ${details.customMintToken} ${details.customMintPrice}`;
         console.log('Verifying collection contract with:');
         console.log(verifyCmd);
         const output = execSync(verifyCmd, { stdio: 'inherit' });
@@ -89,10 +105,15 @@ async function main() {
     } else {
       console.log('No details event found for this collection.');
     }
+      }
+    } catch (err) {
+      console.error('Polling error:', err.message);
+    }
+    await new Promise(res => setTimeout(res, 5000));
   }
 }
 
-main().catch((err) => {
+pollAndVerify().catch((err) => {
   console.error(err);
   process.exit(1);
 }); 

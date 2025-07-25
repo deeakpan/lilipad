@@ -4,26 +4,14 @@ require('dotenv').config();
 
 module.exports = {
   solidity: {
-    compilers: [
-      {
         version: "0.8.20",
         settings: {
           optimizer: {
             enabled: true,
             runs: 200
-          }
-        }
       },
-      {
-        version: "0.8.28",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200
-          }
-        }
-      }
-    ]
+      viaIR: true
+    }
   },
   networks: {
     'pepu-v2-testnet-vn4qxxp9og': {

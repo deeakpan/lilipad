@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/interfaces/IERC2981.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title LiliPadCollection
@@ -24,6 +25,8 @@ contract LiliPadCollection is ERC721Enumerable, Ownable, ReentrancyGuard, IERC29
     uint256 public mintEnd;
     uint256 public minted;
     bool public launched;
+    address public customMintToken;
+    uint256 public customMintPrice;
 
     // Track original minter if needed (optional)
     // mapping(uint256 => address) public minters;
@@ -42,7 +45,9 @@ contract LiliPadCollection is ERC721Enumerable, Ownable, ReentrancyGuard, IERC29
         address _royaltyRecipient,
         uint256 _mintStart,
         uint256 _mintEnd,
-        address _owner
+        address _owner,
+        address _customMintToken,
+        uint256 _customMintPrice
     ) ERC721(_name, _symbol) {
         require(_maxSupply > 0, "No supply");
         require(_royaltyRecipient != address(0), "Royalty recipient");
@@ -55,14 +60,23 @@ contract LiliPadCollection is ERC721Enumerable, Ownable, ReentrancyGuard, IERC29
         royaltyRecipient = _royaltyRecipient;
         mintStart = _mintStart;
         mintEnd = _mintEnd;
+        customMintToken = _customMintToken;
+        customMintPrice = _customMintPrice;
         _transferOwnership(_owner);
     }
 
-    function mint(uint256 amount) external payable nonReentrant {
+    function mint(uint256 amount, bool useERC20) external payable nonReentrant {
         require(block.timestamp >= mintStart && block.timestamp <= mintEnd, "Not in mint window");
         require(amount > 0, "Zero amount");
         require(minted + amount <= maxSupply, "Exceeds supply");
-        require(msg.value >= mintPrice * amount, "Insufficient payment");
+        if (useERC20) {
+            require(customMintToken != address(0), "ERC20 mint not enabled");
+            require(msg.value == 0, "No ETH for ERC20 mint");
+            uint256 totalPrice = customMintPrice * amount;
+            require(IERC20(customMintToken).transferFrom(msg.sender, address(this), totalPrice), "ERC20 transfer failed");
+        } else {
+            require(msg.value >= mintPrice * amount, "Insufficient payment");
+        }
         for (uint256 i = 0; i < amount; i++) {
             uint256 tokenId = minted + 1;
             _safeMint(msg.sender, tokenId);
@@ -92,6 +106,13 @@ contract LiliPadCollection is ERC721Enumerable, Ownable, ReentrancyGuard, IERC29
         (bool sent, ) = owner().call{value: bal}("");
         require(sent, "Withdraw failed");
         emit Withdraw(owner(), bal);
+    }
+
+    function withdrawERC20(address token) external onlyOwner nonReentrant {
+        IERC20 erc20 = IERC20(token);
+        uint256 bal = erc20.balanceOf(address(this));
+        require(bal > 0, "No ERC20 balance");
+        require(erc20.transfer(owner(), bal), "ERC20 withdraw failed");
     }
 
     // EIP-2981 royalty info

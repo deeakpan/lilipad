@@ -1,29 +1,38 @@
 import React from "react";
 import Link from "next/link";
 import { FaLayerGroup, FaChartBar, FaGift, FaShoppingBag, FaAward, FaPlusCircle, FaUser, FaHeart, FaHistory, FaBookmark, FaInfoCircle, FaBullhorn } from "react-icons/fa";
+import { IconType } from "react-icons";
 
-const navigationCategories = {
+interface NavItem {
+  name: string;
+  icon: IconType;
+  active: boolean;
+  link?: string;
+}
+
+const navigationCategories: { [key: string]: NavItem[] } = {
   explore: [
-    { name: "Collections", icon: <FaLayerGroup className="w-5 h-5" />, active: true },
-    { name: "Stats", icon: <FaChartBar className="w-5 h-5" />, active: false },
-    { name: "Drops", icon: <FaGift className="w-5 h-5" />, active: false },
-    { name: "Marketplace", icon: <FaShoppingBag className="w-5 h-5" />, active: false },
-    { name: "Rankings", icon: <FaAward className="w-5 h-5" />, active: false },
+    { name: "Collections", icon: FaLayerGroup, active: true, link: "/" },
+    { name: "Stats", icon: FaChartBar, active: false },
+    { name: "Drops", icon: FaGift, active: false },
+    { name: "Marketplace", icon: FaShoppingBag, active: false },
+    { name: "Rankings", icon: FaAward, active: false },
+    { name: "Staking", icon: FaAward, active: false, link: "/stakes" },
   ],
   create: [
-    { name: "Create Collection", icon: <FaPlusCircle className="w-5 h-5" />, active: false },
-    { name: "Create NFT", icon: <FaPlusCircle className="w-5 h-5" />, active: false },
-    { name: "My Collections", icon: <FaLayerGroup className="w-5 h-5" />, active: false },
+    { name: "Create Collection", icon: FaPlusCircle, active: false },
+    { name: "Create NFT", icon: FaPlusCircle, active: false },
+    { name: "My Collections", icon: FaLayerGroup, active: false },
   ],
   account: [
-    { name: "Profile", icon: <FaUser className="w-5 h-5" />, active: false },
-    { name: "Favorites", icon: <FaHeart className="w-5 h-5" />, active: false },
-    { name: "Transaction History", icon: <FaHistory className="w-5 h-5" />, active: false },
-    { name: "Watchlist", icon: <FaBookmark className="w-5 h-5" />, active: false },
+    { name: "Profile", icon: FaUser, active: false },
+    { name: "Favorites", icon: FaHeart, active: false },
+    { name: "Transaction History", icon: FaHistory, active: false },
+    { name: "Watchlist", icon: FaBookmark, active: false },
   ],
   other: [
-    { name: "About", icon: <FaInfoCircle className="w-5 h-5" />, active: true },
-    { name: "News", icon: <FaBullhorn className="w-5 h-5" />, active: false },
+    { name: "About", icon: FaInfoCircle, active: true },
+    { name: "News", icon: FaBullhorn, active: false },
   ]
 };
 
@@ -57,23 +66,39 @@ export default function Sidebar({ mobile = false, collapsed = false, setCollapse
                 {category.charAt(0).toUpperCase() + category.slice(1)}
               </h3>
               <div className="space-y-3 pl-1">
-                {items.map((item) => (
-                  item.name === "Create Collection" ? (
+                {items.map((item) => {
+                  const Icon = item.icon;
+                  return item.name === "Create Collection" ? (
                     <Link 
                       key={category + '-' + item.name} 
                       href="/create" 
                       className={`flex items-center gap-2 text-lg font-semibold w-full text-left text-white transition-all duration-300 cursor-default`}
                     >
-                        {React.cloneElement(item.icon, { className: collapsed ? 'w-7 h-7' : 'w-5 h-5' })}
+                        <span style={{ display: 'flex', alignItems: 'center', color: 'white' }}>
+                          <Icon size={collapsed ? 28 : 20} />
+                        </span>
+                        {!collapsed && <span>{item.name}</span>}
+                    </Link>
+                  ) : item.link ? (
+                    <Link
+                      key={category + '-' + item.name}
+                      href={item.link}
+                      className={`flex items-center gap-2 text-lg font-semibold w-full text-left text-white transition-all duration-300 cursor-pointer`}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', color: 'white' }}>
+                        <Icon size={collapsed ? 28 : 20} />
+                      </span>
                         {!collapsed && <span>{item.name}</span>}
                     </Link>
                   ) : (
                     <div key={category + '-' + item.name} className={`flex items-center gap-2 text-lg font-semibold w-full text-left text-white transition-all duration-300 ${!item.active ? 'opacity-70 cursor-default' : ''}`}>
-                      {React.cloneElement(item.icon, { className: collapsed ? 'w-7 h-7' : 'w-5 h-5' })}
+                      <span style={{ display: 'flex', alignItems: 'center', color: 'white' }}>
+                        <Icon size={collapsed ? 28 : 20} />
+                      </span>
                       {!collapsed && <span>{item.name}</span>}
                     </div>
-                  )
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}

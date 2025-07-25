@@ -98,13 +98,24 @@ export async function POST(req: Request) {
     } else if (uploadType === 'collection-metadata') {
       // Handle collection-level metadata JSON upload
       const collectionMetadataFile = formData.get('collectionMetadata') as File;
+      const erc20CA = formData.get('erc20CA') as string | null;
+      const erc20Name = formData.get('erc20Name') as string | null;
+      const erc20Amount = formData.get('erc20Amount') as string | null;
+      const mintPrice = formData.get('mintPrice') as string | null;
       if (!collectionMetadataFile) {
         return NextResponse.json({ error: 'No collection metadata file provided' }, { status: 400 });
       }
       // Save to temp file
       const tempDir = os.tmpdir();
       const tempPath = path.join(tempDir, collectionMetadataFile.name);
-      const buffer = Buffer.from(await collectionMetadataFile.arrayBuffer());
+      let buffer = Buffer.from(await collectionMetadataFile.arrayBuffer());
+      let metadata = JSON.parse(buffer.toString());
+      // Always add minting details (default to zero/empty if not present)
+      metadata.customMintToken = erc20CA || '0x0000000000000000000000000000000000000000';
+      metadata.customMintTokenName = erc20Name || '';
+      metadata.customMintPrice = erc20Amount || '0';
+      metadata.mintPrice = mintPrice || '0';
+      buffer = Buffer.from(JSON.stringify(metadata, null, 2));
       fs.writeFileSync(tempPath, buffer);
       // Upload to Lighthouse
       const res = await lighthouse.upload(tempPath, API_KEY!);

@@ -30,6 +30,50 @@ async function main() {
   process.stdout.write("");
   console.log("===============================================");
   process.stdout.write("");
+
+  // --- Sample collection deployment for event verification ---
+  // Replace these with real values as needed
+  const sampleArgs = [
+    "Test Collection", // name
+    "TEST", // symbol
+    "ipfs://baseURI/", // baseURI
+    "ipfs://collectionURI/", // collectionURI
+    10, // maxSupply
+    ethers.parseEther("1"), // mintPrice
+    500, // royaltyBps
+    deployer.address, // royaltyRecipient
+    Math.floor(Date.now() / 1000) + 60, // mintStart (now + 1 min)
+    Math.floor(Date.now() / 1000) + 3600, // mintEnd (now + 1 hour)
+    "test-vanity", // vanity
+    ethers.ZeroAddress, // customMintToken
+    ethers.parseUnits("0", 18) // customMintPrice
+  ];
+  const tx = await factory.deployCollection(...sampleArgs, { value: ethers.parseEther("3.5") });
+  const receipt = await tx.wait();
+
+  // Listen for CollectionDeployedMain
+  const mainEvent = receipt.logs
+    .map(log => {
+      try { return factory.interface.parseLog(log); } catch { return null; }
+    })
+    .find(parsed => parsed && parsed.name === 'CollectionDeployedMain');
+  if (mainEvent) {
+    console.log('CollectionDeployedMain:', mainEvent.args);
+  }
+
+  // Listen for CollectionDeployedDetails (with new fields)
+  const detailsEvent = receipt.logs
+    .map(log => {
+      try { return factory.interface.parseLog(log); } catch { return null; }
+    })
+    .find(parsed => parsed && parsed.name === 'CollectionDeployedDetails');
+  if (detailsEvent) {
+    console.log('CollectionDeployedDetails:', detailsEvent.args);
+    console.log('customMintToken:', detailsEvent.args.customMintToken);
+    console.log('customMintPrice:', detailsEvent.args.customMintPrice.toString());
+    console.log('discountBps:', detailsEvent.args.discountBps.toString());
+    console.log('finalFeePaid:', detailsEvent.args.finalFeePaid.toString());
+  }
 }
 
 main().catch((error) => {

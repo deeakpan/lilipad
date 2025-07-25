@@ -3,6 +3,13 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./LiliPadCollection.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+// Interface for the staking contract
+interface ILiliPadStaking {
+    function isEligible(address user) external view returns (bool);
+    function getUserDiscount(address user) external view returns (uint8 tier, uint256 discountBps);
+}
 
 /**
  * @title LiliPadFactory
@@ -18,6 +25,9 @@ contract LiliPadFactory is Ownable {
     // Vanity URL mapping (lowercase, min 4 chars)
     mapping(string => address) public vanityToCollection;
     address public withdrawManager;
+    address public constant LILI_TOKEN = 0xaFD224042abbd3c51B82C9f43B681014c12649ca;
+    // Staking contract address
+    ILiliPadStaking public stakingContract;
 
     event CollectionDeployedMain(
         address indexed collection,
@@ -35,13 +45,18 @@ contract LiliPadFactory is Ownable {
         uint96 royaltyBps,
         address royaltyRecipient,
         uint256 mintStart,
-        uint256 mintEnd
+        uint256 mintEnd,
+        address customMintToken,
+        uint256 customMintPrice,
+        uint256 discountBps,
+        uint256 finalFeePaid
     );
 
-    constructor(uint256 _initialLaunchFee, uint256 _platformFeeBps, address _withdrawManager) {
+    constructor(uint256 _initialLaunchFee, uint256 _platformFeeBps, address _withdrawManager, address _stakingContract) {
         launchFee = _initialLaunchFee;
         platformFeeBps = _platformFeeBps;
         withdrawManager = _withdrawManager;
+        stakingContract = ILiliPadStaking(_stakingContract);
     }
 
     function setLaunchFee(uint256 _fee) external onlyOwner {
@@ -51,6 +66,10 @@ contract LiliPadFactory is Ownable {
     function setPlatformFeeBps(uint256 _bps) external onlyOwner {
         require(_bps <= 10000, "Too high");
         platformFeeBps = _bps;
+    }
+
+    function setStakingContract(address _stakingContract) external onlyOwner {
+        stakingContract = ILiliPadStaking(_stakingContract);
     }
 
     modifier onlyWithdrawer() {
@@ -71,6 +90,8 @@ contract LiliPadFactory is Ownable {
      * @param mintStart Mint window start (timestamp)
      * @param mintEnd Mint window end (timestamp)
      * @param vanity Vanity URL (min 4 chars, unique, lowercase)
+     * @param customMintToken Custom ERC20 token for minting (optional)
+     * @param customMintPrice Custom ERC20 mint price
      */
     function deployCollection(
         string memory name,
@@ -83,7 +104,9 @@ contract LiliPadFactory is Ownable {
         address royaltyRecipient,
         uint256 mintStart,
         uint256 mintEnd,
-        string memory vanity
+        string memory vanity,
+        address customMintToken,
+        uint256 customMintPrice
     ) external payable returns (address) {
         require(bytes(vanity).length >= 4, "Vanity too short");
         require(vanityToCollection[vanity] == address(0), "Vanity taken");
@@ -92,9 +115,23 @@ contract LiliPadFactory is Ownable {
         require(royaltyBps <= 5000, "Royalty too high"); // max 50%
         require(royaltyRecipient != address(0), "Royalty recipient");
 
-        uint256 totalPlatformFee = launchFee + (maxSupply * mintPrice * platformFeeBps) / 10000;
+        // Check staking eligibility and get tier-based discount
+        bool eligibleForDiscount = stakingContract.isEligible(msg.sender);
+        bool wantsCustomMint = customMintToken != address(0);
+        if (wantsCustomMint) {
+            require(eligibleForDiscount, "Need staked LILI for custom mint token");
+        }
+        
+        uint256 discountBps = 0;
+        uint256 fee = launchFee;
+        if (eligibleForDiscount) {
+            (, discountBps) = stakingContract.getUserDiscount(msg.sender);
+            uint256 discountAmount = (launchFee * discountBps) / 10000;
+            fee = launchFee - discountAmount;
+        }
+        
+        uint256 totalPlatformFee = fee + (maxSupply * mintPrice * platformFeeBps) / 10000;
         require(msg.value >= totalPlatformFee, "Insufficient launch fee");
-        // No fee forwarding, accumulate in contract
 
         LiliPadCollection collection = new LiliPadCollection(
             name,
@@ -107,7 +144,9 @@ contract LiliPadFactory is Ownable {
             royaltyRecipient,
             mintStart,
             mintEnd,
-            msg.sender
+            msg.sender,
+            customMintToken,
+            customMintPrice
         );
         collections.push(address(collection));
         vanityToCollection[vanity] = address(collection);
@@ -123,7 +162,11 @@ contract LiliPadFactory is Ownable {
             royaltyBps,
             royaltyRecipient,
             mintStart,
-            mintEnd
+            mintEnd,
+            customMintToken,
+            customMintPrice,
+            discountBps,
+            fee
         );
         return address(collection);
     }

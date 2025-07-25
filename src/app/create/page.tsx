@@ -9,6 +9,10 @@ import JSZip from 'jszip';
 import Switch from 'react-switch';
 import { ethers } from 'ethers';
 import factoryABI from '../../abi/LiliPadFactory.json';
+import stakingABI from '../../abi/LiliPadStaking.json';
+
+const STAKING_ADDRESS = process.env.NEXT_PUBLIC_STAKING_ADDRESS || "0x7F992b701376851554f9a01Cc6096f2cCC0c2A95";
+const STAKING_RPC = "https://rpc-pepu-v2-testnet-vn4qxxp9og.t.conduit.xyz";
 
 // Spinner component
 const Spinner = () => (
@@ -293,8 +297,10 @@ export default function CreatePage() {
     const maxSupply = extractedPairs.length;
     const mintPrice = Number(allPrice);
     const platformFee = (maxSupply > 0 && mintPrice > 0) ? (maxSupply * mintPrice * platformFeeBps) / 10000 : 0;
-    const totalFee = launchFee + platformFee;
-    return { launchFee, platformFee, totalFee };
+    const discount = userDiscount.discountBps ? (launchFee * userDiscount.discountBps) / 10000 : 0;
+    const discountedLaunchFee = launchFee - discount;
+    const totalFee = discountedLaunchFee + platformFee;
+    return { launchFee, platformFee, totalFee, discount, discountedLaunchFee };
   }
 
   // Helper to append files to FormData with relative paths
@@ -394,11 +400,15 @@ export default function CreatePage() {
           instagram: igUrl,
           website: website || undefined,
         },
-        baseURI: metadataFolderCID ? `ipfs://${metadataFolderCID}` : undefined,
+        baseURI: metadataFolderCID ? `https://gateway.lighthouse.storage/ipfs/${metadataFolderCID}/` : undefined,
         total_supply: extractedPairs.length,
         items: extractedPairs.map(pair => ({ name: pair.metadata.name, num: pair.num })),
         mint_start: mintStartISO || undefined,
         mint_end: mintEndISO || undefined,
+        customMintToken: enableERC20 && checkedStake && activeStakeTier && erc20CA && ethers.isAddress(erc20CA) ? erc20CA : ethers.ZeroAddress,
+        customMintTokenName: erc20Name || '',
+        customMintPrice: enableERC20 && checkedStake && activeStakeTier && erc20Amount ? erc20Amount : '0',
+        mintPrice: ethers.parseEther(allPrice || '0').toString(),
       };
       
       const collectionMetadataFile = new File([
@@ -410,6 +420,11 @@ export default function CreatePage() {
       collectionMetaFormData.append('collectionMetadata', collectionMetadataFile);
       if (metadataData.collectionImageCid) collectionMetaFormData.append('collectionImageCid', metadataData.collectionImageCid);
       if (metadataFolderCID) collectionMetaFormData.append('metadataFolderCID', metadataFolderCID);
+      // Append ERC20 and mint price fields for backend to use
+      collectionMetaFormData.append('erc20CA', enableERC20 && checkedStake && activeStakeTier && erc20CA && ethers.isAddress(erc20CA) ? erc20CA : ethers.ZeroAddress);
+      collectionMetaFormData.append('erc20Name', erc20Name || '');
+      collectionMetaFormData.append('erc20Amount', enableERC20 && checkedStake && activeStakeTier && erc20Amount ? erc20Amount : '0');
+      collectionMetaFormData.append('mintPrice', ethers.parseEther(allPrice || '0').toString());
       
       const collectionMetaRes = await fetch('/api/launch', {
         method: 'POST',
@@ -441,11 +456,17 @@ export default function CreatePage() {
       // Convert totalFee (in ether) to wei
       const totalFeeWei = ethers.parseEther(totalFee.toString());
       // Deploy the collection
+      const customMintToken = enableERC20 && checkedStake && activeStakeTier && erc20CA && ethers.isAddress(erc20CA) ? erc20CA : ethers.ZeroAddress;
+      const customMintPrice = enableERC20 && checkedStake && activeStakeTier && erc20Amount ? ethers.parseUnits(erc20Amount, 18) : ethers.parseUnits('0', 18);
+      const baseURI = metadataFolderCID ? `https://gateway.lighthouse.storage/ipfs/${metadataFolderCID}/` : undefined;
+      const collectionURI = collectionMetaData.collectionMetadataCid
+        ? `https://gateway.lighthouse.storage/ipfs/${collectionMetaData.collectionMetadataCid.replace(/^ipfs:\/\//, '').replace(/^ipfs\//, '')}`
+        : undefined;
       const tx = await factory.deployCollection(
         collectionName, // name
         collectionSymbol, // symbol
-        `ipfs://${metadataFolderCID}`, // baseURI
-        `ipfs://${collectionMetaData.collectionMetadataCid}`, // collectionURI
+        baseURI, // baseURI (gateway format)
+        collectionURI, // collectionURI (gateway format)
         extractedPairs.length, // maxSupply
         mintPriceWei, // mintPrice
         royalty ? Math.round(Number(royalty) * 100) : 0, // royaltyBps
@@ -453,6 +474,8 @@ export default function CreatePage() {
         Math.floor(new Date(mintStartISO).getTime() / 1000), // mintStart
         Math.floor(new Date(mintEndISO).getTime() / 1000), // mintEnd
         vanityUrl, // vanity
+        customMintToken, // customMintToken
+        customMintPrice, // customMintPrice
         { value: totalFeeWei }
       );
 
@@ -525,6 +548,87 @@ export default function CreatePage() {
     }
     checkBalance();
   }, [showProgressModal, address, progressStep]);
+
+  // Add state for custom ERC20 minting
+  const [enableERC20, setEnableERC20] = useState(false);
+  const [erc20CA, setErc20CA] = useState('');
+  const [erc20Name, setErc20Name] = useState('');
+  const [erc20Amount, setErc20Amount] = useState('');
+  const [erc20Error, setErc20Error] = useState('');
+  const [erc20Loading, setErc20Loading] = useState(false);
+  const [activeStakeTier, setActiveStakeTier] = useState<string | null>(null);
+  const [checkedStake, setCheckedStake] = useState(false);
+
+  // Check for active stake when switch is enabled
+  useEffect(() => {
+    async function checkStake() {
+      setCheckedStake(false);
+      setActiveStakeTier(null);
+      if (!enableERC20 || !address) return;
+      try {
+        const provider = new ethers.JsonRpcProvider(STAKING_RPC);
+        const staking = new ethers.Contract(STAKING_ADDRESS, stakingABI.abi, provider);
+        const [tier, eligible] = await staking.getUserTier(address);
+        if (eligible && Number(tier) > 0) {
+          const tierNames = ['None', 'Sprout', 'Hopper', 'Guardian'];
+          setActiveStakeTier(tierNames[Number(tier)]);
+        } else {
+          setActiveStakeTier(null);
+        }
+      } catch {
+        setActiveStakeTier(null);
+      }
+      setCheckedStake(true);
+    }
+    checkStake();
+  }, [enableERC20, address]);
+
+  // Fetch ERC20 name when CA is entered
+  useEffect(() => {
+    async function fetchTokenName() {
+      setErc20Name('');
+      setErc20Error('');
+      if (!erc20CA || !ethers.isAddress(erc20CA)) {
+        setErc20Error('Enter a valid ERC20 contract address');
+        return;
+      }
+      setErc20Loading(true);
+      try {
+        const provider = new ethers.JsonRpcProvider(STAKING_RPC);
+        const erc20 = new ethers.Contract(erc20CA, ["function name() view returns (string)", "function symbol() view returns (string)", "function decimals() view returns (uint8)"], provider);
+        const name = await erc20.name();
+        setErc20Name(name);
+      } catch {
+        setErc20Error('Could not fetch token name');
+      }
+      setErc20Loading(false);
+    }
+    if (enableERC20 && erc20CA && ethers.isAddress(erc20CA)) fetchTokenName();
+  }, [erc20CA, enableERC20]);
+
+  // ... add at the top of the component ...
+  const [userDiscount, setUserDiscount] = useState<{ tier: string, discountBps: number }>({ tier: 'None', discountBps: 0 });
+
+  // Fetch user discount and tier for fee modal
+  useEffect(() => {
+    async function fetchDiscount() {
+      if (!address) return;
+      try {
+        const provider = new ethers.JsonRpcProvider(STAKING_RPC);
+        const staking = new ethers.Contract(STAKING_ADDRESS, stakingABI.abi, provider);
+        const [tier, discountBps] = await staking.getUserDiscount(address);
+        const tierNames = ['None', 'Sprout', 'Hopper', 'Guardian'];
+        setUserDiscount({ tier: tierNames[Number(tier)], discountBps: Number(discountBps) });
+      } catch {
+        setUserDiscount({ tier: 'None', discountBps: 0 });
+      }
+    }
+    fetchDiscount();
+  }, [address, showFeeModal, enableERC20]);
+
+  // ... add at the top of the component ...
+  const [copiedAddress, setCopiedAddress] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#000', color: '#32CD32', borderColor: '#32CD32' }}>
@@ -916,6 +1020,59 @@ export default function CreatePage() {
                     {extractedPairs.length > 0 && (
                       <span className="text-xs text-green-200 mt-1">Total supply: {extractedPairs.length}</span>
                     )}
+                    {/* Custom ERC20 Minting Switch */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mt-6 w-full">
+                      <label className="flex items-center gap-2 cursor-pointer w-full sm:w-auto">
+                        <Switch
+                          checked={enableERC20}
+                          onChange={setEnableERC20}
+                          onColor="#32CD32"
+                          offColor="#222"
+                          uncheckedIcon={false}
+                          checkedIcon={false}
+                          height={20}
+                          width={40}
+                        />
+                        <span className="text-white font-semibold text-sm sm:text-base whitespace-nowrap">Enable custom ERC20 mint</span>
+                      </label>
+                      {enableERC20 && checkedStake && (
+                        activeStakeTier ? (
+                          <span className="sm:ml-4 px-3 py-1 rounded-full bg-[#232323] text-green-300 font-bold text-xs mt-1 sm:mt-0 w-fit">Active: {activeStakeTier}</span>
+                        ) : (
+                          <span className="sm:ml-4 text-yellow-300 text-xs font-semibold mt-1 sm:mt-0 w-full sm:w-fit text-center sm:text-left">No active stake. Stake in any tier (Sprout, Hopper, Guardian). <Link href="/stakes" className="underline text-green-300">here</Link></span>
+                        )
+                      )}
+                    </div>
+                    {/* ERC20 CA and amount fields if eligible */}
+                    {enableERC20 && checkedStake && activeStakeTier && (
+                      <div className="flex flex-col gap-2 mt-4">
+                        <label className="flex flex-col gap-1">
+                          <span className="text-white text-sm font-semibold">ERC20 Contract Address</span>
+                          <input
+                            type="text"
+                            className="py-2 px-3 rounded border border-[#32CD32] bg-black text-white text-sm focus:outline-none focus:border-yellow-400"
+                            value={erc20CA}
+                            onChange={e => setErc20CA(e.target.value)}
+                            placeholder="0x..."
+                          />
+                          {erc20Loading && <span className="text-xs text-green-300">Fetching token name...</span>}
+                          {erc20Name && <span className="text-xs text-green-300">Token: {erc20Name}</span>}
+                          {erc20Error && <span className="text-xs text-red-400">{erc20Error}</span>}
+                        </label>
+                        <label className="flex flex-col gap-1">
+                          <span className="text-white text-sm font-semibold">ERC20 Mint Price</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            className="w-32 py-2 px-3 rounded border border-[#32CD32] bg-black text-white text-sm focus:outline-none focus:border-yellow-400"
+                            placeholder="1000 (in token decimals)"
+                            value={erc20Amount}
+                            onChange={e => setErc20Amount(e.target.value)}
+                          />
+                        </label>
+                      </div>
+                    )}
                     {/* Start/End date and time pickers */}
                     <div className="flex flex-col gap-4 mt-4 w-full max-w-xl items-start">
                       <div className="flex items-center gap-4">
@@ -1022,6 +1179,10 @@ export default function CreatePage() {
                       <span className="font-bold text-yellow-300">3 PEPU</span>
                     </div>
                     <div className="flex justify-between mb-2">
+                      <span>Discount {userDiscount.tier !== 'None' && `(${userDiscount.tier})`}:</span>
+                      <span className="font-bold text-green-400">{userDiscount.discountBps ? `-${userDiscount.discountBps / 100}%` : '—'}</span>
+                    </div>
+                    <div className="flex justify-between mb-2">
                       <span>Platform Fee (5%):</span>
                       <span className="font-bold text-yellow-300">
                         {(() => {
@@ -1035,13 +1196,27 @@ export default function CreatePage() {
                     <div className="border-t border-[#32CD32] pt-2 mt-2">
                       <div className="flex justify-between">
                         <span className="font-bold text-white">Total:</span>
-                        <span className="font-bold text-yellow-300">{calculatedFee} PEPU</span>
+                        <span className="font-bold text-yellow-300">{calculateFees().totalFee} PEPU</span>
                       </div>
                     </div>
                   </div>
                 </div>
                 <div className="text-xs text-gray-400 mb-4">
-                  This fee will be deducted from your wallet when you approve the transaction.
+                  This fee will be deducted from your wallet when you approve the transaction.<br/>
+                  {userDiscount.tier !== 'None' && (
+                    <span className="text-green-300">Staking tier: <span className="font-bold">{userDiscount.tier}</span> ({userDiscount.discountBps / 100}% discount applied)</span>
+                  )}
+                  {checkingBalance && <span>Checking wallet balance...</span>}
+                  {!checkingBalance && walletBalance !== null && (
+                    <span>
+                      <br/>Your balance: {ethers.formatEther(walletBalance)} PEPU<br/>
+                      {hasEnoughBalance ? (
+                        <span className="text-green-400">You have enough to cover the fee.</span>
+                      ) : (
+                        <span className="text-red-400 font-bold">Insufficient balance to cover the total fee.</span>
+                      )}
+                    </span>
+                  )}
                 </div>
                 <div className="flex gap-3">
                   <button
@@ -1202,6 +1377,10 @@ export default function CreatePage() {
                   <span className="font-bold text-yellow-300">3 PEPU</span>
                 </div>
                 <div className="flex justify-between mb-2">
+                  <span>Discount {userDiscount.tier !== 'None' && `(${userDiscount.tier})`}:</span>
+                  <span className="font-bold text-green-400">{userDiscount.discountBps ? `-${userDiscount.discountBps / 100}%` : '—'}</span>
+                </div>
+                <div className="flex justify-between mb-2">
                   <span>Platform Fee (5%):</span>
                   <span className="font-bold text-yellow-300">
                     {(() => {
@@ -1215,17 +1394,20 @@ export default function CreatePage() {
                 <div className="border-t border-[#32CD32] pt-2 mt-2">
                   <div className="flex justify-between">
                     <span className="font-bold text-white">Total:</span>
-                    <span className="font-bold text-yellow-300">{calculatedFee} PEPU</span>
+                    <span className="font-bold text-yellow-300">{calculateFees().totalFee} PEPU</span>
                   </div>
                 </div>
               </div>
             </div>
             <div className="text-xs text-gray-400 mb-4">
               This fee will be deducted from your wallet when you approve the transaction.<br/>
+              {userDiscount.tier !== 'None' && (
+                <span className="text-green-300">Staking tier: <span className="font-bold">{userDiscount.tier}</span> ({userDiscount.discountBps / 100}% discount applied)</span>
+              )}
               {checkingBalance && <span>Checking wallet balance...</span>}
               {!checkingBalance && walletBalance !== null && (
                 <span>
-                  Your balance: {ethers.formatEther(walletBalance)} PEPU<br/>
+                  <br/>Your balance: {ethers.formatEther(walletBalance)} PEPU<br/>
                   {hasEnoughBalance ? (
                     <span className="text-green-400">You have enough to cover the fee.</span>
                   ) : (
@@ -1304,7 +1486,16 @@ export default function CreatePage() {
                           <div className="text-xs text-[#32CD32] font-semibold mb-1">Collection Contract Address</div>
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-xs break-all text-white">{launchResult.collectionAddress}</span>
-                            <button className="ml-1 text-xs text-[#32CD32] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionAddress || '')}>Copy</button>
+                            <button
+                              className="ml-1 text-xs text-[#32CD32] underline"
+                              onClick={() => {
+                                navigator.clipboard.writeText(launchResult.collectionAddress || '');
+                                setCopiedAddress(true);
+                                setTimeout(() => setCopiedAddress(false), 1200);
+                              }}
+                            >
+                              {copiedAddress ? 'Copied!' : 'Copy'}
+                            </button>
                           </div>
                         </div>
                       )}
@@ -1312,16 +1503,32 @@ export default function CreatePage() {
                         <div className="w-full bg-[#232323] rounded p-3 flex flex-col gap-2 border border-[#FFD700]">
                           <div className="text-xs text-[#FFD700] font-semibold mb-1">Collection URL</div>
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs break-all text-white">{launchResult.collectionURL}</span>
-                            <a
-                              href={launchResult.collectionURL.replace('ipfs://', 'https://ipfs.io/ipfs/')}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="ml-1 text-xs text-[#FFD700] underline"
-                            >
-                              View
-                            </a>
-                            <button className="ml-1 text-xs text-[#FFD700] underline" onClick={() => navigator.clipboard.writeText(launchResult.collectionURL || '')}>Copy</button>
+                            {/* Robustly strip all ipfs://, ipfs/, ipfs://ipfs/ prefixes (even repeated) */}
+                            {(() => {
+                              let cid = launchResult.collectionURL.replace(/^(ipfs:\/\/)+|(ipfs\/)+/g, '');
+                              const gatewayUrl = `https://gateway.lighthouse.storage/ipfs/${cid}`;
+                              return <>
+                                <span className="font-mono text-xs break-all text-white">{gatewayUrl}</span>
+                                <a
+                                  href={gatewayUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="ml-1 text-xs text-[#FFD700] underline"
+                                >
+                                  View
+                                </a>
+                                <button
+                                  className="ml-1 text-xs text-[#FFD700] underline"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(gatewayUrl);
+                                    setCopiedUrl(true);
+                                    setTimeout(() => setCopiedUrl(false), 1200);
+                                  }}
+                                >
+                                  {copiedUrl ? 'Copied!' : 'Copy'}
+                                </button>
+                              </>;
+                            })()}
                           </div>
                         </div>
                       )}
